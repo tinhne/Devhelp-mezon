@@ -1,0 +1,16 @@
+id,title,command,description,category,parameters,examples,deleted,createdAt,updatedAt
+1,Command 1,git stash apply,Áp dụng stash gần nhất,git,"{""branch"": ""Tên nhánh""}","[""git stash apply"", ""git stash apply stash@{1}""]",false,2025-06-20 10:00:00,2025-06-20 10:00:00
+2,Command 2,git pull origin main,Kéo code từ nhánh chính,git,"{""branch"": ""main""}","[""git pull origin main""]",false,2025-06-20 10:00:00,2025-06-20 10:00:00
+3,Command 3,npm install,Cài đặt các package,npm,"{""package"": ""Tên package""}","[""npm install express""]",false,2025-06-20 10:00:00,2025-06-20 10:00:00
+4,Command 4,yarn run start,Khởi động ứng dụng,yarn,"{""script"": ""start""}","[""yarn run start""]",false,2025-06-20 10:00:00,2025-06-20 10:00:00
+5,Command 5,docker-compose up,Khởi động container Docker,docker,"{""service"": ""Tên service""}","[""docker-compose up web""]",false,2025-06-20 10:00:00,2025-06-20 10:00:00
+6,Command 6,git merge,Hợp nhất nhánh,git,"{""branch"": ""Tên nhánh""}","[""git merge feature-branch""]",false,2025-06-20 10:00:00,2025-06-20 10:00:00
+7,Command 7,git rebase,Rebase nhánh,git,"{""branch"": ""Tên nhánh""}","[""git rebase main""]",false,2025-06-20 10:00:00,2025-06-20 10:00:00
+8,Command 8,npm run build,Build ứng dụng,npm,"{""script"": ""build""}","[""npm run build""]",false,2025-06-20 10:00:00,2025-06-20 10:00:00
+9,Command 9,yarn add,Thêm package mới,yarn,"{""package"": ""Tên package""}","[""yarn add lodash""]",false,2025-06-20 10:00:00,2025-06-20 10:00:00
+10,Command 10,docker ps,Liệt kê container đang chạy,docker,"{}","[""docker ps""]",false,2025-06-20 10:00:00,2025-06-20 10:00:00
+11,Command 11,git log,Xem lịch sử commit,git,"{}","[""git log --oneline""]",false,2025-06-20 10:00:00,2025-06-20 10:00:00
+12,Command 12,npm test,Chạy test,npm,"{}","[""npm test""]",false,2025-06-20 10:00:00,2025-06-20 10:00:00
+13,Command 13,yarn lint,Kiểm tra lint,yarn,"{}","[""yarn lint""]",false,2025-06-20 10:00:00,2025-06-20 10:00:00
+14,Command 14,docker stop,Dừng container,docker,"{""container"": ""Tên container""}","[""docker stop web""]",false,2025-06-20 10:00:00,2025-06-20 10:00:00
+15,Command 15,git push,Đẩy code lên repository,git,"{""branch"": ""Tên nhánh""}","[""git push origin main""]",false,2025-06-20 10:00:00,2025-06-20 10:00:00

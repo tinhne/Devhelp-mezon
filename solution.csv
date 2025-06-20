@@ -1,0 +1,16 @@
+id,title,description,code,bug_id,createdAt,updatedAt
+1,Solution 1,Sửa lỗi refresh token,const refreshToken = async () => {...};,1,2025-06-20 10:00:00,2025-06-20 10:00:00
+2,Solution 2,Khắc phục lỗi WebSocket,const connectWebSocket = () => {...};,2,2025-06-20 10:00:00,2025-06-20 10:00:00
+3,Solution 3,Fix lỗi tải file,const downloadFile = async () => {...};,3,2025-06-20 10:00:00,2025-06-20 10:00:00
+4,Solution 4,Sửa lỗi hiển thị UI,const fixUI = () => {...};,4,2025-06-20 10:00:00,2025-06-20 10:00:00
+5,Solution 5,Sửa lỗi gửi email,const sendEmail = async () => {...};,5,2025-06-20 10:00:00,2025-06-20 10:00:00
+6,Solution 6,Sửa lỗi đăng nhập,const login = async () => {...};,6,2025-06-20 10:00:00,2025-06-20 10:00:00
+7,Solution 7,Sửa lỗi tải ảnh,const downloadImage = async () => {...};,7,2025-06-20 10:00:00,2025-06-20 10:00:00
+8,Solution 8,Sửa lỗi xóa dữ liệu,const deleteData = async () => {...};,8,2025-06-20 10:00:00,2025-06-20 10:00:00
+9,Solution 9,Sửa lỗi cập nhật thông tin,const updateInfo = async () => {...};,9,2025-06-20 10:00:00,2025-06-20 10:00:00
+10,Solution 10,Sửa lỗi tìm kiếm,const search = async () => {...};,10,2025-06-20 10:00:00,2025-06-20 10:00:00
+11,Solution 11,Sửa lỗi đăng ký tài khoản,const registerAccount = async () => {...};,11,2025-06-20 10:00:00,2025-06-20 10:00:00
+12,Solution 12,Sửa lỗi tải video,const downloadVideo = async () => {...};,12,2025-06-20 10:00:00,2025-06-20 10:00:00
+13,Solution 13,Sửa lỗi thêm sản phẩm,const addProduct = async () => {...};,13,2025-06-20 10:00:00,2025-06-20 10:00:00
+14,Solution 14,Sửa lỗi thanh toán,const processPayment = async () => {...};,14,2025-06-20 10:00:00,2025-06-20 10:00:00
+15,Solution 15,Sửa lỗi gửi tin nhắn,const sendMessage = async () => {...};,15,2025-06-20 10:00:00,2025-06-20 10:00:00

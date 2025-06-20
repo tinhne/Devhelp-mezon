@@ -1,0 +1,16 @@
+id,title,description,status,severity,steps,environment,createdAt,updatedAt
+1,Bug 1,JWT token không refresh,open,high,"1. Đăng nhập\n2. Đợi token hết hạn\n3. Thực hiện API call","{""os"": ""Ubuntu 22.04"", ""browser"": ""Chrome 118""}",2025-06-20 10:00:00,2025-06-20 10:00:00
+2,Bug 2,Lỗi kết nối WebSocket,in_progress,critical,"1. Khởi động bot\n2. Kiểm tra kết nối WebSocket\n3. Xem log lỗi","{""os"": ""Windows 10"", ""browser"": ""Firefox""}",2025-06-20 10:00:00,2025-06-20 10:00:00
+3,Bug 3,Không thể tải file,closed,medium,"1. Nhấn tải file\n2. Kiểm tra log server\n3. Xác nhận lỗi","{""os"": ""MacOS"", ""browser"": ""Safari""}",2025-06-20 10:00:00,2025-06-20 10:00:00
+4,Bug 4,Lỗi hiển thị UI,open,low,"1. Mở ứng dụng\n2. Kiểm tra giao diện\n3. Xác nhận lỗi","{""os"": ""Ubuntu 20.04"", ""browser"": ""Edge""}",2025-06-20 10:00:00,2025-06-20 10:00:00
+5,Bug 5,Lỗi không gửi được email,open,critical,"1. Thực hiện gửi email\n2. Kiểm tra log server\n3. Xác nhận lỗi","{""os"": ""Windows 11"", ""browser"": ""Chrome""}",2025-06-20 10:00:00,2025-06-20 10:00:00
+6,Bug 6,Lỗi không thể đăng nhập,closed,high,"1. Nhập thông tin đăng nhập\n2. Kiểm tra log server\n3. Xác nhận lỗi","{""os"": ""Ubuntu 22.04"", ""browser"": ""Firefox""}",2025-06-20 10:00:00,2025-06-20 10:00:00
+7,Bug 7,Lỗi không thể tải ảnh,in_progress,medium,"1. Nhấn tải ảnh\n2. Kiểm tra log server\n3. Xác nhận lỗi","{""os"": ""MacOS"", ""browser"": ""Safari""}",2025-06-20 10:00:00,2025-06-20 10:00:00
+8,Bug 8,Lỗi không thể xóa dữ liệu,open,low,"1. Thực hiện xóa dữ liệu\n2. Kiểm tra log server\n3. Xác nhận lỗi","{""os"": ""Windows 10"", ""browser"": ""Edge""}",2025-06-20 10:00:00,2025-06-20 10:00:00
+9,Bug 9,Lỗi không thể cập nhật thông tin,closed,medium,"1. Thực hiện cập nhật thông tin\n2. Kiểm tra log server\n3. Xác nhận lỗi","{""os"": ""Ubuntu 20.04"", ""browser"": ""Chrome""}",2025-06-20 10:00:00,2025-06-20 10:00:00
+10,Bug 10,Lỗi không thể tìm kiếm,open,high,"1. Thực hiện tìm kiếm\n2. Kiểm tra log server\n3. Xác nhận lỗi","{""os"": ""Windows 11"", ""browser"": ""Firefox""}",2025-06-20 10:00:00,2025-06-20 10:00:00
+11,Bug 11,Lỗi không thể đăng ký tài khoản,in_progress,critical,"1. Nhập thông tin đăng ký\n2. Kiểm tra log server\n3. Xác nhận lỗi","{""os"": ""MacOS"", ""browser"": ""Safari""}",2025-06-20 10:00:00,2025-06-20 10:00:00
+12,Bug 12,Lỗi không thể tải video,closed,medium,"1. Nhấn tải video\n2. Kiểm tra log server\n3. Xác nhận lỗi","{""os"": ""Ubuntu 22.04"", ""browser"": ""Edge""}",2025-06-20 10:00:00,2025-06-20 10:00:00
+13,Bug 13,Lỗi không thể thêm sản phẩm,open,low,"1. Thực hiện thêm sản phẩm\n2. Kiểm tra log server\n3. Xác nhận lỗi","{""os"": ""Windows 10"", ""browser"": ""Chrome""}",2025-06-20 10:00:00,2025-06-20 10:00:00
+14,Bug 14,Lỗi không thể thanh toán,closed,critical,"1. Thực hiện thanh toán\n2. Kiểm tra log server\n3. Xác nhận lỗi","{""os"": ""Ubuntu 20.04"", ""browser"": ""Firefox""}",2025-06-20 10:00:00,2025-06-20 10:00:00
+15,Bug 15,Lỗi không thể gửi tin nhắn,open,high,"1. Thực hiện gửi tin nhắn\n2. Kiểm tra log server\n3. Xác nhận lỗi","{""os"": ""MacOS"", ""browser"": ""Safari""}",2025-06-20 10:00:00,2025-06-20 10:00:00
