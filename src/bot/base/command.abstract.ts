@@ -10,12 +10,28 @@ export abstract class CommandMessage {
     this.client = this.clientService.getClient();
   }
 
+  protected filterReplyOptions(options: any): any {
+    // Clone options để không thay đổi object ban đầu
+    const filteredOptions = { ...options };
+
+    // Loại bỏ components nếu có
+    if (filteredOptions.components) {
+      this.logger.debug('Removing button components from reply');
+      delete filteredOptions.components;
+    }
+
+    return filteredOptions;
+  }
+
+
+
+
   protected async getChannelMessage(message: ChannelMessage) {
     try {
       // Kiểm tra xem message có clan_id không
       const serverId = message.server_id || (message as any).clan_id;
       this.logger.debug(`Getting message details - server/clan: ${serverId}, channel: ${message.channel_id}, message: ${message.message_id}`);
-      
+
       if (!serverId || serverId === "0") { // Thêm kiểm tra giá trị "0"
         this.logger.warn(`Invalid server_id or clan_id found in message: ${serverId}`);
         // Tiếp tục thực hiện vì một số tin nhắn có thể có clan_id = "0" nhưng vẫn hợp lệ
@@ -45,24 +61,24 @@ export abstract class CommandMessage {
                   // Thử các phương thức gửi tin nhắn với kiểm tra an toàn
                   if (channel.messages && typeof channel.messages.create === 'function') {
                     this.logger.debug(`Using channel.messages.create() for channel ${message.channel_id}`);
-                    return await channel.messages.create(options);
+                    return await channel.messages.create(this.filterReplyOptions(options));                  
                   }
-                  
+
                   if ((channel.messages as any).send) {
                     this.logger.debug(`Using channel.messages.send() for channel ${message.channel_id}`);
                     return await (channel.messages as any).send(options);
                   }
-                  
+
                   if ((channel as any).send) {
                     this.logger.debug(`Using channel.send() for channel ${message.channel_id}`);
                     return await (channel as any).send(options);
                   }
-                  
+
                   if ((channel as any).createMessage) {
                     this.logger.debug(`Using channel.createMessage() for channel ${message.channel_id}`);
                     return await (channel as any).createMessage(options);
                   }
-                  
+
                   this.logger.warn(`No suitable message creation method found for channel ${message.channel_id}`);
                 } else {
                   this.logger.warn(`Channel not found in clan: ${message.channel_id}`);
@@ -80,24 +96,24 @@ export abstract class CommandMessage {
                 const channel = await server.channels.fetch(message.channel_id);
                 if (channel) {
                   this.logger.debug(`Successfully fetched channel ${message.channel_id} from server ${serverId}`);
-                  
+
                   // Thử từng phương thức với kiểm tra an toàn
                   if (channel.messages && typeof channel.messages.create === 'function') {
-                    return await channel.messages.create(options);
+                    return await channel.messages.create(this.filterReplyOptions(options));                  
                   }
-                  
+
                   if ((channel.messages as any).send) {
                     return await (channel.messages as any).send(options);
                   }
-                  
+
                   if ((channel as any).send) {
                     return await (channel as any).send(options);
                   }
-                  
+
                   if ((channel as any).createMessage) {
                     return await (channel as any).createMessage(options);
                   }
-                  
+
                   this.logger.warn(`No suitable message creation method found for channel ${message.channel_id}`);
                 } else {
                   this.logger.warn(`Channel not found in server: ${message.channel_id}`);
@@ -112,7 +128,7 @@ export abstract class CommandMessage {
               this.logger.debug(`Using direct sendMessage to ${message.channel_id}`);
               return await (this.client as any).sendMessage(message.channel_id, options);
             }
-            
+
             if ((this.client as any).createMessage) {
               this.logger.debug(`Using createMessage for ${message.channel_id}`);
               return await (this.client as any).createMessage(message.channel_id, options);

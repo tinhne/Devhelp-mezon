@@ -6,7 +6,6 @@ import { MezonClientService } from 'src/mezon/services/mezon-client.service';
 import { getRandomColor } from 'src/bot/utils/helps';
 import {
   ButtonAction,
-  ButtonStyle,
   MessageComponentType,
 } from 'src/bot/constants/types';
 import {
@@ -159,61 +158,6 @@ export class SearchCommand extends CommandMessage {
         }
       }
 
-      // Tạo các button để xem chi tiết
-      const commandButtons: ButtonComponent[] = [];
-      const bugButtons: ButtonComponent[] = [];
-      const solutionButtons: ButtonComponent[] = [];
-
-      for (let i = 0; i < Math.min(3, results.commands.length); i++) {
-        commandButtons.push({
-          type: MessageComponentType.BUTTON,
-          style: ButtonStyle.BLUE,
-          label: `Command #${results.commands[i].id}`,
-          custom_id: `${ButtonAction.VIEW}:command:${results.commands[i].id}`,
-        } as ButtonComponent);
-      }
-
-      for (let i = 0; i < Math.min(3, results.bugs.length); i++) {
-        bugButtons.push({
-          type: MessageComponentType.BUTTON,
-          style: ButtonStyle.RED,
-          label: `Bug #${results.bugs[i].id}`,
-          custom_id: `${ButtonAction.VIEW}:bug:${results.bugs[i].id}`,
-        } as ButtonComponent);
-      }
-
-      for (let i = 0; i < Math.min(3, results.solutions.length); i++) {
-        solutionButtons.push({
-          type: MessageComponentType.BUTTON,
-          style: ButtonStyle.GREEN,
-          label: `Solution #${results.solutions[i].id}`,
-          custom_id: `${ButtonAction.VIEW}:solution:${results.solutions[i].id}`,
-        } as ButtonComponent);
-      }
-
-      const actionRows: ActionRowComponent[] = [];
-
-      if (commandButtons.length > 0) {
-        actionRows.push({
-          type: MessageComponentType.ACTION_ROW,
-          components: commandButtons,
-        } as ActionRowComponent);
-      }
-
-      if (bugButtons.length > 0) {
-        actionRows.push({
-          type: MessageComponentType.ACTION_ROW,
-          components: bugButtons,
-        } as ActionRowComponent);
-      }
-
-      if (solutionButtons.length > 0) {
-        actionRows.push({
-          type: MessageComponentType.ACTION_ROW,
-          components: solutionButtons,
-        } as ActionRowComponent);
-      }
-
       return messageChannel.reply({
         t: resultText,
         mk: [
@@ -223,7 +167,6 @@ export class SearchCommand extends CommandMessage {
             e: resultText.length,
           },
         ],
-        components: actionRows,
       } as any);
     } catch (error) {
       return messageChannel.reply({
@@ -291,22 +234,6 @@ export class SearchCommand extends CommandMessage {
         }
       });
 
-      // Tạo các button để xem chi tiết
-      const buttons: ButtonComponent[] = [];
-      for (let i = 0; i < Math.min(5, results.length); i++) {
-        buttons.push({
-          type: MessageComponentType.BUTTON,
-          style: this.getButtonStyleForType(type),
-          label: `Xem #${results[i].id}`,
-          custom_id: `${ButtonAction.VIEW}:${this.getSingularType(type)}:${results[i].id}`,
-        } as ButtonComponent);
-      }
-
-      const actionRow: ActionRowComponent = {
-        type: MessageComponentType.ACTION_ROW,
-        components: buttons,
-      } as ActionRowComponent;
-
       return messageChannel.reply({
         t: resultText,
         mk: [
@@ -316,7 +243,6 @@ export class SearchCommand extends CommandMessage {
             e: resultText.length,
           },
         ],
-        components: [actionRow],
       } as any);
     } catch (error) {
       return messageChannel.reply({
@@ -359,16 +285,4 @@ export class SearchCommand extends CommandMessage {
     }
   }
 
-  private getButtonStyleForType(type: string): ButtonStyle {
-    switch (type) {
-      case 'commands':
-        return ButtonStyle.BLUE;
-      case 'bugs':
-        return ButtonStyle.RED;
-      case 'solutions':
-        return ButtonStyle.GREEN;
-      default:
-        return ButtonStyle.BLUE;
-    }
-  }
 }

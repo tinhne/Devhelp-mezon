@@ -4,7 +4,7 @@ import { ChannelMessage, EMarkdownType } from 'mezon-sdk';
 import { BugService } from 'src/bot/services/bug.service';
 import { MezonClientService } from 'src/mezon/services/mezon-client.service';
 import { getRandomColor } from 'src/bot/utils/helps';
-import { ButtonAction, ButtonStyle, MessageComponentType, BugStatus, BugSeverity } from 'src/bot/constants/types';
+import { ButtonAction, MessageComponentType, BugStatus, BugSeverity } from 'src/bot/constants/types';
 import { ActionRowComponent, ButtonComponent } from 'src/bot/constants/interfaces';
 
 @Command('bug')
@@ -286,22 +286,6 @@ export class BugCommand extends CommandMessage {
     listText += `• /bug update --id=${bugs[0].id} --status="in_progress"    (Cập nhật trạng thái)\n`;
     listText += `• /solution create --bug-id=${bugs[0].id}    (Thêm giải pháp)\n`;
 
-    // Tạo các button để xem chi tiết
-    const buttons: ButtonComponent[] = [];
-    for (let i = 0; i < Math.min(5, bugs.length); i++) {
-      buttons.push({
-        type: MessageComponentType.BUTTON,
-        style: ButtonStyle.RED,
-        label: `Xem Chi Tiết #${bugs[i].id}`,
-        custom_id: `${ButtonAction.VIEW}:bug:${bugs[i].id}`,
-      } as ButtonComponent);
-    }
-
-    const actionRow: ActionRowComponent = {
-      type: MessageComponentType.ACTION_ROW,
-      components: buttons,
-    } as ActionRowComponent;
-
     return messageChannel.reply({
       t: listText,
       mk: [
@@ -311,7 +295,6 @@ export class BugCommand extends CommandMessage {
           e: listText.length,
         },
       ],
-      components: [actionRow],
     } as any);
   }
 
@@ -350,47 +333,6 @@ export class BugCommand extends CommandMessage {
         ).join('\n');
       }
       
-      // Tạo các button cho actions
-      const buttons: ButtonComponent[] = [
-        {
-          type: MessageComponentType.BUTTON,
-          style: ButtonStyle.GREEN,
-          label: 'Cập Nhật Bug',
-          custom_id: `${ButtonAction.UPDATE}:bug:${bug.id}`,
-        } as ButtonComponent,
-        {
-          type: MessageComponentType.BUTTON,
-          style: ButtonStyle.BLUE,
-          label: 'Thêm Giải Pháp',
-          custom_id: `${ButtonAction.CREATE}:solution:${bug.id}`,
-        } as ButtonComponent,
-      ];
-      
-      const actionRow: ActionRowComponent = {
-        type: MessageComponentType.ACTION_ROW,
-        components: buttons,
-      } as ActionRowComponent;
-      
-      // Tạo row cho các solution buttons nếu có
-      const solutionButtons: ButtonComponent[] = [];
-      if (bug.solutions && bug.solutions.length > 0) {
-        for (let i = 0; i < Math.min(3, bug.solutions.length); i++) {
-          solutionButtons.push({
-            type: MessageComponentType.BUTTON,
-            style: ButtonStyle.BLUE,
-            label: `Xem Giải Pháp #${bug.solutions[i].id}`,
-            custom_id: `${ButtonAction.VIEW}:solution:${bug.solutions[i].id}`,
-          } as ButtonComponent);
-        }
-      }
-      
-      const components = [actionRow];
-      if (solutionButtons.length > 0) {
-        components.push({
-          type: MessageComponentType.ACTION_ROW,
-          components: solutionButtons,
-        } as ActionRowComponent);
-      }
 
       return messageChannel.reply({
         embed: [
@@ -434,7 +376,6 @@ export class BugCommand extends CommandMessage {
             },
           },
         ],
-        components: components,
       } as any);
     } catch (error) {
       return messageChannel.reply({
@@ -565,19 +506,6 @@ export class BugCommand extends CommandMessage {
             s: 0,
             e: `✅ Đã cập nhật bug #${id}:\n\n${changesText}\nSử dụng /bug detail --id=${id} để xem chi tiết.`.length,
           },
-        ],
-        components: [
-          {
-            type: MessageComponentType.ACTION_ROW,
-            components: [
-              {
-                type: MessageComponentType.BUTTON,
-                style: ButtonStyle.RED,
-                label: 'Xem Chi Tiết',
-                custom_id: `${ButtonAction.VIEW}:bug:${id}`,
-              } as ButtonComponent,
-            ],
-          } as ActionRowComponent,
         ],
       } as any);
     } catch (error) {

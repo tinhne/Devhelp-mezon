@@ -17,15 +17,6 @@ export class HelpCommand extends CommandMessage {
     const messageChannel = await this.getChannelMessage(message);
     if (!messageChannel) return;
 
-    // Tạo các button hướng dẫn
-    // const helpButtons = [
-    //   createButton(ButtonStyle.BLUE, 'Hướng dẫn Command', 'help:command'),
-    //   createButton(ButtonStyle.RED, 'Hướng dẫn Bug', 'help:bug'),
-    //   createButton(ButtonStyle.GREEN, 'Hướng dẫn Solution', 'help:solution'),
-    //   createButton(ButtonStyle.GREY, 'Hướng dẫn Bot', 'help:bot'),
-    // ];
-
-    // const buttonRow = createActionRow(helpButtons);
 
     return safeReply(messageChannel, {
       embed: [
@@ -93,7 +84,6 @@ export class HelpCommand extends CommandMessage {
           },
         },
       ],
-      // components: [buttonRow],
     });
   }
 }

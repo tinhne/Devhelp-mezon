@@ -5,7 +5,7 @@ import { SolutionService } from 'src/bot/services/solution.service';
 import { BugService } from 'src/bot/services/bug.service';
 import { MezonClientService } from 'src/mezon/services/mezon-client.service';
 import { getRandomColor } from 'src/bot/utils/helps';
-import { ButtonAction, ButtonStyle, MessageComponentType, BugStatus } from 'src/bot/constants/types';
+import { ButtonAction, MessageComponentType, BugStatus } from 'src/bot/constants/types';
 import { ActionRowComponent, ButtonComponent } from 'src/bot/constants/interfaces';
 
 @Command('solution')
@@ -210,27 +210,6 @@ export class SolutionCommand extends CommandMessage {
         });
       }
 
-      // Tạo buttons cho các actions
-      const buttons: ButtonComponent[] = [
-        {
-          type: MessageComponentType.BUTTON,
-          style: ButtonStyle.GREEN,
-          label: 'Xem Chi Tiết',
-          custom_id: `${ButtonAction.VIEW}:solution:${newSolution.id}`,
-        } as ButtonComponent,
-        {
-          type: MessageComponentType.BUTTON,
-          style: ButtonStyle.BLUE,
-          label: 'Xem Bug',
-          custom_id: `${ButtonAction.VIEW}:bug:${bug.id}`,
-        } as ButtonComponent,
-      ];
-
-      const actionRow: ActionRowComponent = {
-        type: MessageComponentType.ACTION_ROW,
-        components: buttons,
-      } as ActionRowComponent;
-
       // Gửi thông báo thành công
       return messageChannel.reply({
         t: `✅ Đã thêm giải pháp! ID: ${newSolution.id}\nBug: #${bug.id} - ${bug.title}\n\nSử dụng /solution detail --id=${newSolution.id} để xem chi tiết.`,
@@ -241,7 +220,6 @@ export class SolutionCommand extends CommandMessage {
             e: `✅ Đã thêm giải pháp! ID: ${newSolution.id}\nBug: #${bug.id} - ${bug.title}\n\nSử dụng /solution detail --id=${newSolution.id} để xem chi tiết.`.length,
           },
         ],
-        components: [actionRow],
       } as any);
     } catch (error) {
       return messageChannel.reply({
@@ -281,17 +259,9 @@ export class SolutionCommand extends CommandMessage {
       const solutions = await this.solutionService.listByBugId(parseInt(bugId));
       
       if (solutions.length === 0) {
-        // Tạo button thêm giải pháp
-        const createButton: ButtonComponent = {
-          type: MessageComponentType.BUTTON,
-          style: ButtonStyle.BLUE,
-          label: 'Thêm Giải Pháp',
-          custom_id: `${ButtonAction.CREATE}:solution:${bugId}`,
-        } as ButtonComponent;
-
         const actionRow: ActionRowComponent = {
           type: MessageComponentType.ACTION_ROW,
-          components: [createButton],
+          // components: [createButton],
         } as ActionRowComponent;
 
         return messageChannel.reply({
@@ -319,37 +289,6 @@ export class SolutionCommand extends CommandMessage {
       listText += `• /solution update --id=${solutions[0].id}    (Cập nhật giải pháp)\n`;
       listText += `• /solution create --bug-id=${bugId}    (Thêm giải pháp mới)\n`;
 
-      // Tạo các button để xem chi tiết
-      const buttons: ButtonComponent[] = [];
-      for (let i = 0; i < Math.min(5, solutions.length); i++) {
-        buttons.push({
-          type: MessageComponentType.BUTTON,
-          style: ButtonStyle.GREEN,
-          label: `Xem Chi Tiết #${solutions[i].id}`,
-          custom_id: `${ButtonAction.VIEW}:solution:${solutions[i].id}`,
-        } as ButtonComponent);
-      }
-      
-      const createButton: ButtonComponent = {
-        type: MessageComponentType.BUTTON,
-        style: ButtonStyle.BLUE,
-        label: 'Thêm Giải Pháp',
-        custom_id: `${ButtonAction.CREATE}:solution:${bugId}`,
-      } as ButtonComponent;
-      
-      const actionRows: ActionRowComponent[] = [];
-      if (buttons.length > 0) {
-        actionRows.push({
-          type: MessageComponentType.ACTION_ROW,
-          components: buttons,
-        } as ActionRowComponent);
-      }
-      
-      actionRows.push({
-        type: MessageComponentType.ACTION_ROW,
-        components: [createButton],
-      } as ActionRowComponent);
-
       return messageChannel.reply({
         t: listText,
         mk: [
@@ -359,7 +298,6 @@ export class SolutionCommand extends CommandMessage {
             e: listText.length,
           },
         ],
-        components: actionRows,
       } as any);
     } catch (error) {
       return messageChannel.reply({
@@ -404,27 +342,6 @@ export class SolutionCommand extends CommandMessage {
         codeDisplay = `\`\`\`\n${solution.code}\n\`\`\``;
       }
 
-      // Tạo các button
-      const buttons: ButtonComponent[] = [
-        {
-          type: MessageComponentType.BUTTON,
-          style: ButtonStyle.BLUE,
-          label: 'Xem Bug',
-          custom_id: `${ButtonAction.VIEW}:bug:${solution.bug.id}`,
-        } as ButtonComponent,
-        {
-          type: MessageComponentType.BUTTON,
-          style: ButtonStyle.GREEN,
-          label: 'Cập Nhật Giải Pháp',
-          custom_id: `${ButtonAction.UPDATE}:solution:${solution.id}`,
-        } as ButtonComponent,
-      ];
-      
-      const actionRow: ActionRowComponent = {
-        type: MessageComponentType.ACTION_ROW,
-        components: buttons,
-      } as ActionRowComponent;
-
       return messageChannel.reply({
         embed: [
           {
@@ -453,7 +370,6 @@ export class SolutionCommand extends CommandMessage {
             },
           },
         ],
-        components: [actionRow],
       } as any);
     } catch (error) {
       return messageChannel.reply({
@@ -530,19 +446,6 @@ export class SolutionCommand extends CommandMessage {
         changesText += `• ${key}: ${oldValue} ➔ ${newValue}\n`;
       }
       
-      // Tạo button xem chi tiết
-      const viewButton: ButtonComponent = {
-        type: MessageComponentType.BUTTON,
-        style: ButtonStyle.GREEN,
-        label: 'Xem Chi Tiết',
-        custom_id: `${ButtonAction.VIEW}:solution:${id}`,
-      } as ButtonComponent;
-      
-      const actionRow: ActionRowComponent = {
-        type: MessageComponentType.ACTION_ROW,
-        components: [viewButton],
-      } as ActionRowComponent;
-
       return messageChannel.reply({
         t: `✅ Đã cập nhật giải pháp #${id}:\n\n${changesText}\nSử dụng /solution detail --id=${id} để xem chi tiết.`,
         mk: [
@@ -552,7 +455,6 @@ export class SolutionCommand extends CommandMessage {
             e: `✅ Đã cập nhật giải pháp #${id}:\n\n${changesText}\nSử dụng /solution detail --id=${id} để xem chi tiết.`.length,
           },
         ],
-        components: [actionRow],
       } as any);
     } catch (error) {
       return messageChannel.reply({

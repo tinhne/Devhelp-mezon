@@ -4,7 +4,7 @@ import { ChannelMessage, EMarkdownType } from 'mezon-sdk';
 import { CommandService } from 'src/bot/services/command.service';
 import { MezonClientService } from 'src/mezon/services/mezon-client.service';
 import { getRandomColor } from 'src/bot/utils/helps';
-import { ButtonAction, ButtonStyle, MessageComponentType } from 'src/bot/constants/types';
+import { ButtonAction, MessageComponentType } from 'src/bot/constants/types';
 import { ActionRowComponent, ButtonComponent } from 'src/bot/constants/interfaces';
 
 @Command('command')
@@ -298,22 +298,6 @@ export class CommandBotCommand extends CommandMessage {
     listText += `• /command update --id=${commands[0].id}    (Cập nhật lệnh)\n`;
     listText += `• /command delete --id=${commands[0].id}    (Xóa lệnh)\n`;
 
-    // Tạo các button để xem chi tiết
-    const buttons: ButtonComponent[] = [];
-    for (let i = 0; i < Math.min(5, commands.length); i++) {
-      buttons.push({
-        type: MessageComponentType.BUTTON,
-        style: ButtonStyle.BLUE,
-        label: `Xem Chi Tiết #${commands[i].id}`,
-        custom_id: `${ButtonAction.VIEW}:command:${commands[i].id}`,
-      } as ButtonComponent);
-    }
-
-    const actionRow: ActionRowComponent = {
-      type: MessageComponentType.ACTION_ROW,
-      components: buttons,
-    } as ActionRowComponent;
-
     return messageChannel.reply({
       t: listText,
       mk: [
@@ -323,7 +307,6 @@ export class CommandBotCommand extends CommandMessage {
           e: listText.length,
         },
       ],
-      components: [actionRow],
     } as any);
   }
 
@@ -407,25 +390,6 @@ export class CommandBotCommand extends CommandMessage {
               text: 'DevHelper Bot',
             },
           },
-        ],
-        components: [
-          {
-            type: MessageComponentType.ACTION_ROW,
-            components: [
-              {
-                type: MessageComponentType.BUTTON,
-                style: ButtonStyle.BLUE,
-                label: 'Cập Nhật Lệnh',
-                custom_id: `${ButtonAction.UPDATE}:command:${command.id}`,
-              } as ButtonComponent,
-              {
-                type: MessageComponentType.BUTTON,
-                style: ButtonStyle.RED,
-                label: 'Xóa Lệnh',
-                custom_id: `${ButtonAction.DELETE}:command:${command.id}`,
-              } as ButtonComponent,
-            ],
-          } as ActionRowComponent,
         ],
       } as any);
     } catch (error) {
@@ -546,19 +510,6 @@ export class CommandBotCommand extends CommandMessage {
             e: `✅ Đã cập nhật lệnh #${id}:\n\n${changesText}\nSử dụng /command detail --id=${id} để xem chi tiết.`.length,
           },
         ],
-        components: [
-          {
-            type: MessageComponentType.ACTION_ROW,
-            components: [
-              {
-                type: MessageComponentType.BUTTON,
-                style: ButtonStyle.BLUE,
-                label: 'Xem Chi Tiết',
-                custom_id: `${ButtonAction.VIEW}:command:${id}`,
-              } as ButtonComponent,
-            ],
-          } as ActionRowComponent,
-        ],
       } as any);
     } catch (error) {
       return messageChannel.reply({
@@ -606,19 +557,6 @@ export class CommandBotCommand extends CommandMessage {
             e: `🗑️ Đã xóa lệnh #${id} "${command.title}"\nSử dụng /command restore --id=${id} để khôi phục.`.length,
           },
         ],
-        components: [
-          {
-            type: MessageComponentType.ACTION_ROW,
-            components: [
-              {
-                type: MessageComponentType.BUTTON,
-                style: ButtonStyle.GREEN,
-                label: 'Khôi Phục',
-                custom_id: `${ButtonAction.RESTORE}:command:${id}`,
-              } as ButtonComponent,
-            ],
-          } as ActionRowComponent,
-        ],
       } as any);
     } catch (error) {
       return messageChannel.reply({
@@ -665,19 +603,6 @@ export class CommandBotCommand extends CommandMessage {
             s: 0,
             e: `♻️ Đã khôi phục lệnh #${id} "${command.title}"\nSử dụng /command detail --id=${id} để xem chi tiết.`.length,
           },
-        ],
-        components: [
-          {
-            type: MessageComponentType.ACTION_ROW,
-            components: [
-              {
-                type: MessageComponentType.BUTTON,
-                style: ButtonStyle.BLUE,
-                label: 'Xem Chi Tiết',
-                custom_id: `${ButtonAction.VIEW}:command:${id}`,
-              } as ButtonComponent,
-            ],
-          } as ActionRowComponent,
         ],
       } as any);
     } catch (error) {
@@ -738,22 +663,6 @@ export class CommandBotCommand extends CommandMessage {
       listText += `• /command detail --id=${cmd.id}\n`;
     });
 
-    // Tạo các button để xem chi tiết
-    const buttons: ButtonComponent[] = [];
-    for (let i = 0; i < Math.min(5, commands.length); i++) {
-      buttons.push({
-        type: MessageComponentType.BUTTON,
-        style: ButtonStyle.BLUE,
-        label: `Xem Chi Tiết #${commands[i].id}`,
-        custom_id: `${ButtonAction.VIEW}:command:${commands[i].id}`,
-      } as ButtonComponent);
-    }
-
-    const actionRow: ActionRowComponent = {
-      type: MessageComponentType.ACTION_ROW,
-      components: buttons,
-    } as ActionRowComponent;
-
     return messageChannel.reply({
       t: listText,
       mk: [
@@ -763,7 +672,6 @@ export class CommandBotCommand extends CommandMessage {
           e: listText.length,
         },
       ],
-      components: [actionRow],
     } as any);
   }
 
