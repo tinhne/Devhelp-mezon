@@ -121,43 +121,53 @@ export class BugCommand extends CommandMessage {
     return result;
   }
 
-  private async showHelp(messageChannel: any): Promise<any> {
-    return messageChannel.reply({
-      t: '🐛 Hướng dẫn sử dụng lệnh bug:',
-      embed: [
-        {
-          color: getRandomColor(),
-          title: 'DevHelper - Bug Help',
-          description: 'Các lệnh quản lý bug:',
-          fields: [
-            {
-              name: '*bug create',
-              value: 'Báo cáo bug mới\n' +
-                    'Ví dụ: `*bug create --title="JWT token không refresh" --desc="Token mới không được tạo khi token cũ hết hạn" --severity="high" --steps="1. Đăng nhập\\n2. Đợi token hết hạn\\n3. Thực hiện API call" --environment=\'{"os": "Ubuntu 22.04", "browser": "Chrome 118"}\'`',
-            },
-            {
-              name: '*bug list',
-              value: 'Liệt kê bug theo trạng thái\n' +
-                    'Ví dụ: `/bug list --status="open"` (open, in_progress, closed)',
-            },
-            {
-              name: '*bug detail',
-              value: 'Xem chi tiết bug\n' +
-                    'Ví dụ: `*bug detail --id=47`',
-            },
-            {
-              name: '*bug update',
-              value: 'Cập nhật thông tin bug\n' +
-                    'Ví dụ: `*bug update --id=47 --status="in_progress" --severity="high" --title="Tiêu đề mới" --desc="Mô tả mới"`',
-            },
-          ],
-          footer: {
-            text: 'DevHelper Bot',
+private async showHelp(messageChannel: any): Promise<any> {
+  return messageChannel.reply({
+    t: '🐛 Hướng dẫn sử dụng lệnh bug',
+    embed: [
+      {
+        color: getRandomColor(),
+        title: 'DevHelper - Bug Tracker',
+        description: 'Công cụ giúp quản lý báo cáo và theo dõi bug:',
+        fields: [
+          {
+            name: '📝 Tạo báo cáo bug mới',
+            value: '*bug create --title="JWT token không refresh" --desc="Mô tả lỗi" --severity="high"\n\n' +
+                  'Mức độ: `low`, `medium`, `high`, `critical`'
           },
+          {
+            name: '📋 Liệt kê bug theo trạng thái',
+            value: '*bug list --status="open"\n\n' +
+                  'Trạng thái: `open`, `in_progress`, `closed`'
+          },
+          {
+            name: '🔍 Xem chi tiết bug',
+            value: '*bug detail --id=47\n\n' +
+                  'Hiển thị đầy đủ thông tin của bug, bao gồm các giải pháp.'
+          },
+          {
+            name: '✏️ Cập nhật thông tin bug',
+            value: '*bug update --id=47 --status="in_progress" --severity="high"'
+          },
+          {
+            name: '💻 Tham số nâng cao',
+            value: '*bug create --title="Bug XYZ" --steps="1. Đăng nhập\\n2. Đợi token hết hạn"\n' +
+                  '*bug create --environment=\'{"os":"Ubuntu 22.04","browser":"Chrome 118"}\''
+          },
+          {
+            name: '📌 Lưu ý quan trọng',
+            value: '• Tham số `--title` là bắt buộc khi tạo bug mới\n' +
+                  '• Với JSON dùng: `\'{"key":"value"}\'`\n' +
+                  '• Xuống dòng trong steps: `\\n`'
+          }
+        ],
+        footer: {
+          text: 'Gõ *bug hoặc *bug help để hiển thị hướng dẫn này',
         },
-      ],
-    });
-  }
+      },
+    ],
+  });
+}
 
   private async handleCreate(args: Record<string, string>, messageChannel: any): Promise<any> {
     // Kiểm tra các tham số bắt buộc

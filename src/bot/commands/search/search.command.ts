@@ -42,43 +42,53 @@ export class SearchCommand extends CommandMessage {
   }
 
   private async showHelp(messageChannel: any): Promise<any> {
-    return messageChannel.reply({
-      t: '🔍 Hướng dẫn sử dụng lệnh search:',
-      embed: [
-        {
-          color: getRandomColor(),
-          title: 'DevHelper - Search Help',
-          description: 'Tìm kiếm thông tin trong hệ thống:',
-          fields: [
-            {
-              name: '*search [query]',
-              value:
-                'Tìm kiếm tất cả các loại (command, bug, solution) với từ khóa\n' +
-                'Ví dụ: `*search git commit`',
-            },
-            {
-              name: '*search commands [query]',
-              value:
-                'Tìm kiếm chỉ các lệnh\n' + 'Ví dụ: `*search commands stash`',
-            },
-            {
-              name: '*search bugs [query]',
-              value: 'Tìm kiếm chỉ các bug\n' + 'Ví dụ: `*search bugs token`',
-            },
-            {
-              name: '*search solutions [query]',
-              value:
-                'Tìm kiếm chỉ các giải pháp\n' +
-                'Ví dụ: `*search solutions authentication`',
-            },
-          ],
-          footer: {
-            text: 'DevHelper Bot',
+  return messageChannel.reply({
+    t: '🔍 Hướng dẫn sử dụng lệnh search',
+    embed: [
+      {
+        color: getRandomColor(),
+        title: 'DevHelper - Search Help',
+        description: 'Công cụ tìm kiếm thông tin trong hệ thống:',
+        fields: [
+          {
+            name: '🔎 Tìm kiếm tổng hợp',
+            value: '*search [từ khóa]\n\n' +
+                  'Tìm kiếm tất cả các loại (lệnh, bug, giải pháp) cùng lúc.\n\n' +
+                  'Ví dụ: `*search git commit`'
           },
+          {
+            name: '📝 Tìm kiếm lệnh',
+            value: '*search commands [từ khóa]\n\n' +
+                  'Chỉ tìm kiếm trong các lệnh đã lưu.\n\n' +
+                  'Ví dụ: `*search commands stash`'
+          },
+          {
+            name: '🐛 Tìm kiếm bug',
+            value: '*search bugs [từ khóa]\n\n' +
+                  'Chỉ tìm kiếm trong các báo cáo bug.\n\n' +
+                  'Ví dụ: `*search bugs token`'
+          },
+          {
+            name: '💡 Tìm kiếm giải pháp',
+            value: '*search solutions [từ khóa]\n\n' +
+                  'Chỉ tìm kiếm trong các giải pháp đã đề xuất.\n\n' +
+                  'Ví dụ: `*search solutions authentication`'
+          },
+          {
+            name: '📌 Lưu ý khi sử dụng',
+            value: '• Tìm kiếm không phân biệt chữ hoa chữ thường\n' +
+                  '• Từ khóa có thể gồm nhiều từ cách nhau bởi dấu cách\n' +
+                  '• Kết quả tìm kiếm tổng hợp hiển thị tối đa 5 kết quả cho mỗi loại\n' +
+                  '• Tìm kiếm được thực hiện trong tiêu đề, mô tả và các trường liên quan'
+          }
+        ],
+        footer: {
+          text: 'Gõ *search [từ khóa] để bắt đầu tìm kiếm',
         },
-      ],
-    });
-  }
+      },
+    ],
+  });
+}
 
   private async handleGenericSearch(
     args: string[],

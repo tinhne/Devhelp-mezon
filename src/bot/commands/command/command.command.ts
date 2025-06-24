@@ -127,58 +127,53 @@ export class CommandBotCommand extends CommandMessage {
     return result;
   }
 
-  private async showHelp(messageChannel: any): Promise<any> {
-    return messageChannel.reply({
-      t: '📚 Hướng dẫn sử dụng lệnh command:',
-      embed: [
-        {
-          color: getRandomColor(),
-          title: 'DevHelper - Command Help',
-          description: 'Các lệnh quản lý command (lưu trữ lệnh):',
-          fields: [
-            {
-              name: '*command save',
-              value: 'Lưu lệnh mới\n' +
-                    'Ví dụ: `*command save --title="git-stash" --command="git stash apply" --desc="Áp dụng stash gần nhất" --category="git" --parameters=\'{"branch":"Tên nhánh"}\' --examples=\'["git stash apply", "git stash apply stash@{1}"]\'`',
-            },
-            {
-              name: '*command list',
-              value: 'Liệt kê lệnh theo danh mục\n' +
-                    'Ví dụ: `*command list --category="git"`',
-            },
-            {
-              name: '*command detail',
-              value: 'Xem chi tiết lệnh\n' +
-                    'Ví dụ: `*command detail --id=125`',
-            },
-            {
-              name: '*command update',
-              value: 'Cập nhật lệnh\n' +
-                    'Ví dụ: `*command update --id=125 --title="git-stash-apply" --desc="Áp dụng stash đã lưu"`',
-            },
-            {
-              name: '*command delete',
-              value: 'Xóa lệnh (soft delete)\n' +
-                    'Ví dụ: `*command delete --id=125`',
-            },
-            {
-              name: '*command restore',
-              value: 'Khôi phục lệnh đã xóa\n' +
-                    'Ví dụ: `*command restore --id=125`',
-            },
-            {
-              name: '*command find',
-              value: 'Tìm kiếm lệnh theo từ khóa\n' +
-                    'Ví dụ: `*command find --query="git stash"`',
-            },
-          ],
-          footer: {
-            text: 'DevHelper Bot',
+private async showHelp(messageChannel: any): Promise<any> {
+  return messageChannel.reply({
+    t: '📚 Hướng dẫn sử dụng lệnh command',
+    embed: [
+      {
+        color: getRandomColor(),
+        title: 'DevHelper - Command Help',
+        description: 'Công cụ giúp bạn lưu trữ và quản lý các lệnh thường dùng:',
+        fields: [
+          {
+            name: '1️⃣ Xem danh sách lệnh',
+            value: '*command list --category="git"\n\nLiệt kê các lệnh trong danh mục (VD: git, docker).'
           },
+          {
+            name: '2️⃣ Tìm kiếm lệnh',
+            value: '*command find --query="stash"\n\nTìm các lệnh liên quan đến từ khóa.'
+          },
+          {
+            name: '3️⃣ Xem chi tiết lệnh',
+            value: '*command detail --id=125\n\nHiển thị đầy đủ thông tin của lệnh có ID 125.'
+          },
+          {
+            name: '4️⃣ Lưu lệnh mới',
+            value: '*command save --title="git-stash" --command="git stash" --desc="Lưu thay đổi tạm thời" --category="git"\n\nThêm lệnh mới với tham số cơ bản.'
+          },
+          {
+            name: '5️⃣ Lưu lệnh với tham số và ví dụ',
+            value: '*command save --title="git-stash" --command="git stash" --category="git" --parameters=\'{"branch":"Tên nhánh"}\' --examples=\'["git stash apply"]\'\n\nLưu ý định dạng JSON đặc biệt cho parameters và examples.'
+          },
+          {
+            name: '6️⃣ Quản lý lệnh đã lưu',
+            value: '*command update --id=125 --title="Tên mới"\n*command delete --id=125\n*command restore --id=125\n\nCập nhật, xóa hoặc khôi phục lệnh theo ID.'
+          },
+          {
+            name: '📝 Lưu ý quan trọng',
+            value: '• Tham số bắt buộc khi tạo mới: `--title`, `--command` và `--category`\n\n' +
+                  '• Với JSON, dùng ngoặc đơn bên ngoài, ngoặc kép bên trong: `\'{"key":"value"}\'`\n\n' +
+                  '• Dùng `*command list` trước để biết ID các lệnh cần quản lý'
+          }
+        ],
+        footer: {
+          text: 'Gõ *command hoặc *command help để hiển thị hướng dẫn này',
         },
-      ],
-    });
-  }
+      },
+    ],
+  });
+}
 
   private async handleSave(args: Record<string, string>, messageChannel: any): Promise<any> {
     // Kiểm tra các tham số bắt buộc

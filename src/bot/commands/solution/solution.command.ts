@@ -123,43 +123,54 @@ export class SolutionCommand extends CommandMessage {
     return result;
   }
 
-  private async showHelp(messageChannel: any): Promise<any> {
-    return messageChannel.reply({
-      t: '💡 Hướng dẫn sử dụng lệnh solution:',
-      embed: [
-        {
-          color: getRandomColor(),
-          title: 'DevHelper - Solution Help',
-          description: 'Các lệnh quản lý giải pháp:',
-          fields: [
-            {
-              name: '*solution create',
-              value: 'Thêm giải pháp cho bug\n' +
-                    'Ví dụ: `*solution create --bug-id=47 --title="Sửa lỗi refresh token" --desc="Token refresh không hoạt động do thiếu kiểm tra" --code="const checkToken = async (req, res, next) => {...}"`',
-            },
-            {
-              name: '*solution list',
-              value: 'Liệt kê giải pháp theo bug\n' +
-                    'Ví dụ: `*solution list --bug-id=47`',
-            },
-            {
-              name: '*solution detail',
-              value: 'Xem chi tiết giải pháp\n' +
-                    'Ví dụ: `*solution detail --id=28`',
-            },
-            {
-              name: '*solution update',
-              value: 'Cập nhật giải pháp\n' +
-                    'Ví dụ: `*solution update --id=28 --title="Tiêu đề mới" --desc="Mô tả mới" --code="Code mới"`',
-            },
-          ],
-          footer: {
-            text: 'DevHelper Bot',
+private async showHelp(messageChannel: any): Promise<any> {
+  return messageChannel.reply({
+    t: '💡 Hướng dẫn sử dụng lệnh solution',
+    embed: [
+      {
+        color: getRandomColor(),
+        title: 'DevHelper - Solution Help',
+        description: 'Công cụ quản lý giải pháp cho bug:',
+        fields: [
+          {
+            name: '📋 Liệt kê giải pháp theo bug',
+            value: '*solution list --bug-id=47\n\n' +
+                  'Hiển thị tất cả giải pháp đã đề xuất cho bug có ID 47.'
           },
+          {
+            name: '🔍 Xem chi tiết giải pháp',
+            value: '*solution detail --id=28\n\n' +
+                  'Hiển thị thông tin chi tiết của giải pháp có ID 28, bao gồm code và mô tả đầy đủ.'
+          },
+          {
+            name: '➕ Thêm giải pháp mới',
+            value: '*solution create --bug-id=47 --title="Sửa lỗi refresh token"\n\n' +
+                  'Tham số bắt buộc: `--bug-id` và `--title`'
+          },
+          {
+            name: '✏️ Cập nhật giải pháp',
+            value: '*solution update --id=28 --title="Tiêu đề mới"\n' +
+                  '*solution update --id=28 --code="// Code mới đã sửa lỗi"'
+          },
+          {
+            name: '💻 Ví dụ đầy đủ',
+            value: '*solution create --bug-id=47 --title="Sửa lỗi refresh token" --desc="Mô tả về lỗi" --code="function fix() { ... }"'
+          },
+          {
+            name: '📝 Lưu ý quan trọng',
+            value: '• Khi tạo giải pháp mới, phải có `--bug-id` và `--title`\n' +
+                  '• Khi liệt kê giải pháp, phải cung cấp `--bug-id`\n' +
+                  '• Khi xem chi tiết hoặc cập nhật, phải cung cấp `--id`\n' +
+                  '• Tạo giải pháp cho bug "open" sẽ tự động đổi trạng thái thành "in_progress"'
+          }
+        ],
+        footer: {
+          text: 'Gõ *solution để hiển thị hướng dẫn này',
         },
-      ],
-    });
-  }
+      },
+    ],
+  });
+}
 
   private async handleCreate(args: Record<string, string>, messageChannel: any): Promise<any> {
     // Kiểm tra các tham số bắt buộc
