@@ -174,8 +174,8 @@ For support, join our [MEZON](https://mezon.ai/invite/1840697798857592832) or ch
 
 ## 👤 Author
 
-- [Huu Thien](https://www.facebook.com/imhuuthien) 
-- [Trung Tinh](https://www.facebook.com/trung.tinh.30323)
+- Huu Thien [Facebook](https://www.facebook.com/imhuuthien) | [GitHub](https://github.com/NguyenHuuThien098)
+- Trung Tinh [Facebook](https://www.facebook.com/trung.tinh.30323) | [GitHub](https://github.com/tinhne)
 - Devhelp-mezon contributors
 
 ---
