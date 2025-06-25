@@ -171,3 +171,15 @@ Devhelp-mezon is MIT-licensed and open source.
 For support, join our [MEZON](https://mezon.ai/invite/1840697798857592832) or check the [NestJS support page](https://docs.nestjs.com/support).
 
 ---
+
+## 👤 Author
+
+- [Huu Thien](https://www.facebook.com/imhuuthien) 
+- [Trung Tinh](https://www.facebook.com/trung.tinh.30323)
+- Devhelp-mezon contributors
+
+---
+
+## 📄 License
+
+[MIT](https://github.com/nestjs/nest/blob/master/LICENSE)
