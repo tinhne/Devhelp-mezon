@@ -28,7 +28,7 @@ export class BotGateway {
       }
     }, 60 * 60 * 1000); // 1 giờ
   }
-  
+
   onModuleDestroy() {
     if (this.reconnectTimeout) clearTimeout(this.reconnectTimeout);
     if (this.connectionCheckInterval) clearInterval(this.connectionCheckInterval);
@@ -67,7 +67,7 @@ export class BotGateway {
         this.logger.debug('Received empty or invalid message');
         return;
       }
-      
+
       const content = message?.content?.t || '';
       const shortContent = content.substring(0, 30) || '';
       this.logger.debug(`Received message: ${shortContent}... (clan_id: ${message.clan_id || message.server_id}, channel: ${message.channel_id})`);
@@ -91,7 +91,7 @@ export class BotGateway {
         this.eventEmitter.emit(Events.ChannelMessage, message);
         return;
       }
-      
+
       // Kiểm tra lệnh resetbot để buộc khởi động lại
       if (content.startsWith('*resetbot') || content.startsWith('/resetbot') ||
         content.startsWith('\\resetbot') || content === 'resetbot') {
@@ -128,12 +128,12 @@ export class BotGateway {
       }
 
       // Xử lý các lệnh đặc biệt liên quan đến quản lý bot
-      if (content.startsWith('*bot ') || content.startsWith('/bot ') || 
-          content.startsWith('\\bot ')) {
+      if (content.startsWith('*bot ') || content.startsWith('/bot ') ||
+        content.startsWith('\\bot ')) {
         this.eventEmitter.emit(Events.ChannelMessage, message);
         return;
       }
-      
+
       // Chỉ xử lý các lệnh thông thường khi bot active
       if (this.botStateService.isActive()) {
         this.eventEmitter.emit(Events.ChannelMessage, message);
@@ -146,7 +146,7 @@ export class BotGateway {
         this.logger.debug('Received invalid button click');
         return;
       }
-      
+
       this.logger.debug(`Button click: ${message.custom_id} (channel: ${message.channel_id})`);
 
       // Only process button clicks if bot is active
@@ -242,7 +242,7 @@ export class BotGateway {
         this.client = await this.clientService.reconnectBot();
         this.logger.log(`Reconnection after error successful (attempt ${this.reconnectAttempts})`);
         this.botStateService.setActive();
-        
+
         // Khởi tạo lại events
         await this.initEvent();
       } catch (e) {
@@ -258,8 +258,9 @@ export class BotGateway {
       }
     }, 5000);
   }
-  
+
   // Manually reset bot
+  // ...existing code...
   async resetBot() {
     this.logger.log('Manual bot reset initiated');
     this.reconnectAttempts = 0; // Reset counter for fresh start
@@ -267,14 +268,13 @@ export class BotGateway {
 
     try {
       this.client = await this.clientService.reconnectBot();
+      // Cập nhật lại client cho các event handler
       await this.initEvent();
       this.botStateService.setActive();
       return true;
     } catch (error) {
       this.logger.error(`Manual bot reset failed: ${error.message}`);
       this.botStateService.setError(`Manual reset failed: ${error.message}`);
-      
-      // Thử lại sau 10 giây nếu reset thủ công thất bại
       setTimeout(() => this.resetBot(), 10000);
       return false;
     }
@@ -283,43 +283,76 @@ export class BotGateway {
   // Send reset confirmation
   private async sendResetConfirmation(message: any) {
     try {
-      const serverId = message.server_id || (message as any).clan_id;
+      const serverId = message.server_id || message.clan_id;
       const channelId = message.channel_id;
+      let sent = false;
 
       if ((this.client as any).clans) {
         const clan = (this.client as any).clans.get(serverId);
         if (clan) {
           const channel = await clan.channels.fetch(channelId);
           if (channel) {
-            await channel.messages.create({
-              t: `✅ Bot đã được khởi động lại thành công!`,
-              mk: [{ type: 'PRE', s: 0, e: 38 }],
-            });
+            if (typeof channel.sendMessage === 'function') {
+              await channel.sendMessage({
+                t: `✅ Bot đã được khởi động lại thành công!`,
+                mk: [{ type: 'PRE', s: 0, e: 38 }],
+              });
+              sent = true;
+            } else if (typeof channel.createMessage === 'function') {
+              await channel.createMessage({
+                t: `✅ Bot đã được khởi động lại thành công!`,
+                mk: [{ type: 'PRE', s: 0, e: 38 }],
+              });
+              sent = true;
+            }
           }
         }
+      }
+      if (!sent && typeof (this.client as any).sendMessage === 'function') {
+        await (this.client as any).sendMessage(channelId, {
+          t: `✅ Bot đã được khởi động lại thành công!`,
+          mk: [{ type: 'PRE', s: 0, e: 38 }],
+        });
       }
     } catch (error) {
       this.logger.error(`Failed to send reset confirmation: ${error.message}`);
     }
   }
-  
+
+
   // Send reset failed notification
   private async sendResetFailedNotification(message: any) {
     try {
-      const serverId = message.server_id || (message as any).clan_id;
+      const serverId = message.server_id || message.clan_id;
       const channelId = message.channel_id;
+      let sent = false;
 
       if ((this.client as any).clans) {
         const clan = (this.client as any).clans.get(serverId);
         if (clan) {
           const channel = await clan.channels.fetch(channelId);
           if (channel) {
-            await channel.messages.create({
-              t: `❌ Không thể khởi động lại bot. Đang thử lại tự động...`,
-              mk: [{ type: 'PRE', s: 0, e: 46 }],
-            });
+            if (typeof channel.sendMessage === 'function') {
+              await channel.sendMessage({
+                t: `❌ Không thể khởi động lại bot. Đang thử lại tự động...`,
+                mk: [{ type: 'PRE', s: 0, e: 46 }],
+              });
+              sent = true;
+            } else if (typeof channel.createMessage === 'function') {
+              await channel.createMessage({
+                t: `❌ Không thể khởi động lại bot. Đang thử lại tự động...`,
+                mk: [{ type: 'PRE', s: 0, e: 46 }],
+              });
+              sent = true;
+            }
           }
         }
+      }
+      if (!sent && typeof (this.client as any).sendMessage === 'function') {
+        await (this.client as any).sendMessage(channelId, {
+          t: `❌ Không thể khởi động lại bot. Đang thử lại tự động...`,
+          mk: [{ type: 'PRE', s: 0, e: 46 }],
+        });
       }
     } catch (error) {
       this.logger.error(`Failed to send reset failure notification: ${error.message}`);
@@ -329,25 +362,43 @@ export class BotGateway {
   // Send activation confirmation
   private async sendActivationConfirmation(message: any) {
     try {
-      const serverId = message.server_id || (message as any).clan_id;
+      const serverId = message.server_id || message.clan_id;
       const channelId = message.channel_id;
+      let sent = false;
 
       if ((this.client as any).clans) {
         const clan = (this.client as any).clans.get(serverId);
         if (clan) {
           const channel = await clan.channels.fetch(channelId);
           if (channel) {
-            await channel.messages.create({
-              t: `✅ Bot đã được kích hoạt và sẵn sàng nhận lệnh!`,
-              mk: [{ type: 'PRE', s: 0, e: 38 }],
-            });
+            if (typeof channel.sendMessage === 'function') {
+              await channel.sendMessage({
+                t: `✅ Bot đã được kích hoạt và sẵn sàng nhận lệnh!`,
+                mk: [{ type: 'PRE', s: 0, e: 38 }],
+              });
+              sent = true;
+            } else if (typeof channel.createMessage === 'function') {
+              await channel.createMessage({
+                t: `✅ Bot đã được kích hoạt và sẵn sàng nhận lệnh!`,
+                mk: [{ type: 'PRE', s: 0, e: 38 }],
+              });
+              sent = true;
+            }
           }
         }
+      }
+      // Nếu không gửi được qua clan/channel, thử gửi trực tiếp qua client
+      if (!sent && typeof (this.client as any).sendMessage === 'function') {
+        await (this.client as any).sendMessage(channelId, {
+          t: `✅ Bot đã được kích hoạt và sẵn sàng nhận lệnh!`,
+          mk: [{ type: 'PRE', s: 0, e: 38 }],
+        });
       }
     } catch (error) {
       this.logger.error(`Failed to send activation confirmation: ${error.message}`);
     }
   }
+
 
   // Get current bot status
   getBotStatus() {
@@ -366,5 +417,16 @@ export class BotGateway {
       maxReconnectAttempts: this.maxReconnectAttempts !== Infinity ? this.maxReconnectAttempts : "No limit",
       timestamp: new Date().toISOString()
     };
+  }
+
+  async activateBot(): Promise<boolean> {
+    this.botStateService.setActive();
+    this.logger.log('Bot activated by command');
+    return true;
+  }
+
+  async deactivateBot(reason = ''): Promise<void> {
+    this.botStateService.setInactive(reason);
+    this.logger.log(`Bot deactivated by command${reason ? `: ${reason}` : ''}`);
   }
 }
