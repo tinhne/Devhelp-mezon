@@ -30,9 +30,32 @@ async function bootstrap() {
       const bot = app.get(BotGateway);
       await bot.initEvent();
       logger.log('Bot gateway initialization completed');
+      
+      // Thêm kiểm tra định kỳ để đảm bảo bot vẫn hoạt động
+      setInterval(async () => {
+        try {
+          const botStatus = bot.getBotStatus();
+          if (botStatus.state !== 'active') {
+            logger.warn(`Bot not active, current state: ${botStatus.state}. Attempting to reset...`);
+            await bot.resetBot();
+          }
+        } catch (error) {
+          logger.error(`Error in bot status check: ${error.message}`);
+        }
+      }, 15 * 60 * 1000); // 15 phút
     } catch (botError) {
       logger.error(`Error initializing bot gateway: ${botError.message}`, botError.stack);
-      // Không terminate ứng dụng để tránh tự động restart liên tục khi có lỗi bot
+      // Thử lại sau 10 giây nếu khởi tạo thất bại
+      setTimeout(async () => {
+        try {
+          logger.log('Retrying bot gateway initialization...');
+          const bot = app.get(BotGateway);
+          await bot.initEvent();
+          logger.log('Bot gateway initialization succeeded on retry');
+        } catch (retryError) {
+          logger.error(`Retry failed: ${retryError.message}`);
+        }
+      }, 10000);
     }
   } catch (error) {
     logger.error(`Error during bootstrap: ${error.message}`, error.stack);

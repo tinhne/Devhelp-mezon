@@ -9,9 +9,10 @@ export class BotGateway {
   private readonly logger = new Logger(BotGateway.name);
   private client: MezonClient;
   private reconnectAttempts = 0;
-  private maxReconnectAttempts = 5;
+  private maxReconnectAttempts = Infinity; // Không giới hạn số lần kết nối lại
   private reconnectTimeout: NodeJS.Timeout | null = null;
   private connectionCheckInterval: NodeJS.Timeout | null = null;
+  private reconnectResetInterval: NodeJS.Timeout | null = null;
 
   constructor(
     private readonly clientService: MezonClientService,
@@ -19,6 +20,19 @@ export class BotGateway {
     private botStateService: BotStateService
   ) {
     this.client = this.clientService.getClient();
+    // Thêm interval để reset bộ đếm kết nối lại mỗi giờ
+    this.reconnectResetInterval = setInterval(() => {
+      if (this.reconnectAttempts > 0) {
+        this.logger.log('Reset reconnect counter from ' + this.reconnectAttempts + ' to 0');
+        this.reconnectAttempts = 0;
+      }
+    }, 60 * 60 * 1000); // 1 giờ
+  }
+  
+  onModuleDestroy() {
+    if (this.reconnectTimeout) clearTimeout(this.reconnectTimeout);
+    if (this.connectionCheckInterval) clearInterval(this.connectionCheckInterval);
+    if (this.reconnectResetInterval) clearInterval(this.reconnectResetInterval);
   }
 
   async initEvent() {
@@ -48,59 +62,91 @@ export class BotGateway {
     });
 
     this.client.on(Events.ChannelMessage, (message) => {
-  const content = message?.content?.t || '';
-  const shortContent = content.substring(0, 30) || '';
-  this.logger.debug(`Received message: ${shortContent}... (clan_id: ${message.clan_id || message.server_id}, channel: ${message.channel_id})`);
+      // Bảo vệ từ null hoặc undefined
+      if (!message || !message.content) {
+        this.logger.debug('Received empty or invalid message');
+        return;
+      }
+      
+      const content = message?.content?.t || '';
+      const shortContent = content.substring(0, 30) || '';
+      this.logger.debug(`Received message: ${shortContent}... (clan_id: ${message.clan_id || message.server_id}, channel: ${message.channel_id})`);
 
-  // Kiểm tra xem tin nhắn có prefix hợp lệ không
-  const validPrefixes = ['*', '/', '\\'];
-  const firstChar = (content.trim())[0];
-  const hasValidPrefix = validPrefixes.includes(firstChar);
+      // Kiểm tra xem tin nhắn có prefix hợp lệ không
+      const validPrefixes = ['*', '/', '\\'];
+      const firstChar = (content.trim())[0];
+      const hasValidPrefix = validPrefixes.includes(firstChar);
 
-  // Quan trọng: Luôn kiểm tra lệnh active trước, ngay cả khi bot không active
-  if (content.startsWith('*activate') || content.startsWith('/activate') || 
-      content.startsWith('\\activate') || content === 'activate' || 
-      content.startsWith('activate ')) {
-    this.logger.log('Activation command received, activating bot');
-    this.botStateService.setActive();
-    
-    // Get message channel to send confirmation
-    this.sendActivationConfirmation(message);
-    
-    // Now process the message
-    this.eventEmitter.emit(Events.ChannelMessage, message);
-    return;
-  }
+      // Quan trọng: Luôn kiểm tra lệnh active trước, ngay cả khi bot không active
+      if (content.startsWith('*activate') || content.startsWith('/activate') ||
+        content.startsWith('\\activate') || content === 'activate' ||
+        content.startsWith('activate ')) {
+        this.logger.log('Activation command received, activating bot');
+        this.botStateService.setActive();
 
-  // Nếu không có prefix hợp lệ và bot không đang ở chế độ active, bỏ qua tin nhắn
-  if (!hasValidPrefix) {
-    this.logger.debug(`Skipping message without valid prefix: ${shortContent}`);
-    return;
-  }
+        // Get message channel to send confirmation
+        this.sendActivationConfirmation(message);
 
-  // Luôn xử lý các lệnh quản lý trạng thái của bot
-  if (content.startsWith('*deactivate') || content.startsWith('/deactivate') || 
-      content.startsWith('\\deactivate') || content === 'deactivate' || 
-      content.startsWith('deactivate ')) {
-    this.eventEmitter.emit(Events.ChannelMessage, message);
-    return;
-  }
+        // Now process the message
+        this.eventEmitter.emit(Events.ChannelMessage, message);
+        return;
+      }
+      
+      // Kiểm tra lệnh resetbot để buộc khởi động lại
+      if (content.startsWith('*resetbot') || content.startsWith('/resetbot') ||
+        content.startsWith('\\resetbot') || content === 'resetbot') {
+        this.logger.log('Reset command received, resetting bot connection');
+        this.resetBot().then(success => {
+          if (success) {
+            this.sendResetConfirmation(message);
+          } else {
+            this.sendResetFailedNotification(message);
+          }
+        });
+        return;
+      }
 
-  if (content.startsWith('*botstatus') || content.startsWith('/botstatus') || 
-      content.startsWith('\\botstatus') || content === 'botstatus' || 
-      content.startsWith('botstatus ')) {
-    this.eventEmitter.emit(Events.ChannelMessage, message);
-    return;
-  }
+      // Nếu không có prefix hợp lệ, bỏ qua tin nhắn
+      if (!hasValidPrefix) {
+        this.logger.debug(`Skipping message without valid prefix: ${shortContent}`);
+        return;
+      }
 
-  // Chỉ xử lý các lệnh thông thường khi bot active
-  if (this.botStateService.isActive()) {
-    this.eventEmitter.emit(Events.ChannelMessage, message);
-  }
-});
+      // Luôn xử lý các lệnh quản lý trạng thái của bot
+      if (content.startsWith('*deactivate') || content.startsWith('/deactivate') ||
+        content.startsWith('\\deactivate') || content === 'deactivate' ||
+        content.startsWith('deactivate ')) {
+        this.eventEmitter.emit(Events.ChannelMessage, message);
+        return;
+      }
+
+      if (content.startsWith('*botstatus') || content.startsWith('/botstatus') ||
+        content.startsWith('\\botstatus') || content === 'botstatus' ||
+        content.startsWith('botstatus ')) {
+        this.eventEmitter.emit(Events.ChannelMessage, message);
+        return;
+      }
+
+      // Xử lý các lệnh đặc biệt liên quan đến quản lý bot
+      if (content.startsWith('*bot ') || content.startsWith('/bot ') || 
+          content.startsWith('\\bot ')) {
+        this.eventEmitter.emit(Events.ChannelMessage, message);
+        return;
+      }
+      
+      // Chỉ xử lý các lệnh thông thường khi bot active
+      if (this.botStateService.isActive()) {
+        this.eventEmitter.emit(Events.ChannelMessage, message);
+      }
+    });
 
     // Process button clicks
     this.client.on(Events.MessageButtonClicked, (message) => {
+      if (!message || !message.custom_id) {
+        this.logger.debug('Received invalid button click');
+        return;
+      }
+      
       this.logger.debug(`Button click: ${message.custom_id} (channel: ${message.channel_id})`);
 
       // Only process button clicks if bot is active
@@ -156,26 +202,22 @@ export class BotGateway {
     // Try reconnecting after 3 seconds
     this.reconnectTimeout = setTimeout(async () => {
       try {
-        if (this.reconnectAttempts < this.maxReconnectAttempts) {
-          this.reconnectAttempts++;
-          this.logger.log(`Reconnect attempt ${this.reconnectAttempts} of ${this.maxReconnectAttempts}`);
+        // Bỏ kiểm tra giới hạn reconnect, luôn thử kết nối lại
+        this.reconnectAttempts++;
+        this.logger.log(`Reconnect attempt ${this.reconnectAttempts}`);
 
-          this.client = await this.clientService.reconnectBot();
-          this.logger.log('Reconnection successful');
-          this.botStateService.setActive();
+        this.client = await this.clientService.reconnectBot();
+        this.logger.log('Reconnection successful');
+        this.botStateService.setActive();
 
-          // Reinitialize events after reconnect
-          await this.initEvent();
-        } else {
-          this.logger.error(`Maximum reconnection attempts (${this.maxReconnectAttempts}) reached. Manual intervention required.`);
-          this.botStateService.setError(`Maximum reconnection attempts (${this.maxReconnectAttempts}) reached`);
-        }
+        // Reinitialize events after reconnect
+        await this.initEvent();
       } catch (error) {
         this.logger.error(`Reconnection failed: ${error.message}`);
         this.botStateService.setError(`Reconnection failed: ${error.message}`);
 
         // Try again after longer period if still failing
-        const retryTime = Math.min(30000, 3000 * Math.pow(2, this.reconnectAttempts));
+        const retryTime = Math.min(30000, 3000 * Math.pow(1.5, Math.min(10, this.reconnectAttempts)));
         this.logger.log(`Will retry in ${retryTime / 1000} seconds...`);
 
         this.reconnectTimeout = setTimeout(() => {
@@ -192,30 +234,35 @@ export class BotGateway {
     this.logger.error(`Bot connection error: ${error.message}`);
     this.botStateService.setError(`Connection error: ${error.message}`);
 
-    // Try reconnecting after 5 seconds
+    // Luôn luôn thử kết nối lại, bất kể số lần đã thử
     setTimeout(async () => {
       this.logger.log('Attempting to reconnect after error...');
       try {
-        if (this.reconnectAttempts < this.maxReconnectAttempts) {
-          this.reconnectAttempts++;
-          this.client = await this.clientService.reconnectBot();
-          this.logger.log('Reconnection after error successful');
-          this.botStateService.setActive();
-        } else {
-          this.logger.error(`Maximum reconnection attempts (${this.maxReconnectAttempts}) reached after error. Manual intervention required.`);
-          this.botStateService.setError(`Maximum reconnection attempts reached after error`);
-        }
+        this.reconnectAttempts++;
+        this.client = await this.clientService.reconnectBot();
+        this.logger.log(`Reconnection after error successful (attempt ${this.reconnectAttempts})`);
+        this.botStateService.setActive();
+        
+        // Khởi tạo lại events
+        await this.initEvent();
       } catch (e) {
-        this.logger.error(`Reconnection after error failed: ${e.message}`);
+        this.logger.error(`Reconnection failed (attempt ${this.reconnectAttempts}): ${e.message}`);
         this.botStateService.setError(`Reconnection failed: ${e.message}`);
+
+        // Nếu thất bại, thử lại với thời gian chờ tăng dần
+        const retryDelay = Math.min(30000, 3000 * Math.pow(1.5, Math.min(10, this.reconnectAttempts)));
+        this.logger.log(`Will try again in ${retryDelay / 1000} seconds (attempt ${this.reconnectAttempts})`);
+
+        // Thử lại sau khoảng thời gian delay
+        setTimeout(() => this.handleConnectionError(error), retryDelay);
       }
     }, 5000);
   }
-
+  
   // Manually reset bot
   async resetBot() {
     this.logger.log('Manual bot reset initiated');
-    this.reconnectAttempts = 0;
+    this.reconnectAttempts = 0; // Reset counter for fresh start
     this.botStateService.setReconnecting();
 
     try {
@@ -226,40 +273,56 @@ export class BotGateway {
     } catch (error) {
       this.logger.error(`Manual bot reset failed: ${error.message}`);
       this.botStateService.setError(`Manual reset failed: ${error.message}`);
+      
+      // Thử lại sau 10 giây nếu reset thủ công thất bại
+      setTimeout(() => this.resetBot(), 10000);
       return false;
     }
   }
 
-  // Manually deactivate bot
-  async deactivateBot(reason: string) {
-    this.logger.log(`Manual bot deactivation: ${reason}`);
-    this.botStateService.setInactive(reason);
-    // Stop connection check to avoid auto-reconnect
-    if (this.connectionCheckInterval) {
-      clearInterval(this.connectionCheckInterval);
-      this.connectionCheckInterval = null;
-    }
-    return true;
-  }
-
-  // Manually activate bot
-  async activateBot() {
-    this.logger.log('Manual bot activation');
+  // Send reset confirmation
+  private async sendResetConfirmation(message: any) {
     try {
-      // Check connection first
-      const isConnected = await this.clientService.checkConnection();
-      if (!isConnected) {
-        this.logger.log('Connection lost, reconnecting before activation');
-        this.client = await this.clientService.reconnectBot();
-      }
+      const serverId = message.server_id || (message as any).clan_id;
+      const channelId = message.channel_id;
 
-      this.botStateService.setActive();
-      this.startConnectionCheck();
-      return true;
+      if ((this.client as any).clans) {
+        const clan = (this.client as any).clans.get(serverId);
+        if (clan) {
+          const channel = await clan.channels.fetch(channelId);
+          if (channel) {
+            await channel.messages.create({
+              t: `✅ Bot đã được khởi động lại thành công!`,
+              mk: [{ type: 'PRE', s: 0, e: 38 }],
+            });
+          }
+        }
+      }
     } catch (error) {
-      this.logger.error(`Manual bot activation failed: ${error.message}`);
-      this.botStateService.setError(`Activation failed: ${error.message}`);
-      return false;
+      this.logger.error(`Failed to send reset confirmation: ${error.message}`);
+    }
+  }
+  
+  // Send reset failed notification
+  private async sendResetFailedNotification(message: any) {
+    try {
+      const serverId = message.server_id || (message as any).clan_id;
+      const channelId = message.channel_id;
+
+      if ((this.client as any).clans) {
+        const clan = (this.client as any).clans.get(serverId);
+        if (clan) {
+          const channel = await clan.channels.fetch(channelId);
+          if (channel) {
+            await channel.messages.create({
+              t: `❌ Không thể khởi động lại bot. Đang thử lại tự động...`,
+              mk: [{ type: 'PRE', s: 0, e: 46 }],
+            });
+          }
+        }
+      }
+    } catch (error) {
+      this.logger.error(`Failed to send reset failure notification: ${error.message}`);
     }
   }
 
@@ -300,7 +363,7 @@ export class BotGateway {
       ...this.botStateService.getStatusDetails(),
       connectionInfo: clientInfo,
       lastReconnectAttempt: this.reconnectAttempts,
-      maxReconnectAttempts: this.maxReconnectAttempts,
+      maxReconnectAttempts: this.maxReconnectAttempts !== Infinity ? this.maxReconnectAttempts : "No limit",
       timestamp: new Date().toISOString()
     };
   }

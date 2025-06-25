@@ -15,10 +15,21 @@ export class MezonModule {
           provide: MezonClientService,
           useFactory: async (configService: ConfigService) => {
             const token = configService.get<string>('MEZON_TOKEN');
-            if (!token) return null;
+            if (!token) {
+              throw new Error('MEZON_TOKEN is not defined in environment variables');
+            }
+            
+            // Tạo instance với token
             const client = new MezonClientService(token);
-
-            await client.initializeClient();
+            
+            try {
+              // Thử khởi tạo kết nối, nhưng không throw lỗi nếu thất bại
+              // Sẽ có cơ chế tự động kết nối lại sau
+              await client.initializeClient();
+            } catch (error) {
+              // Log lỗi nhưng vẫn trả về client instance
+              console.error('Failed to initialize Mezon client, will retry:', error);
+            }
 
             return client;
           },
