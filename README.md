@@ -98,36 +98,76 @@ Nest is an MIT-licensed open source project. It can grow thanks to the sponsors 
 Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
 
 
-command:
-1. Lệnh trợ giúp (help)
+## 💡 Features & Commands
+
+### 1. Help
+```
 *help
-2. Quản lý lệnh (command)
-*command save --title="git-stash" --command="git stash apply" --desc="Áp dụng stash gần nhất" --category="git"
+```
+
+### 2. Command Management
+```
+*command save --title="git-stash" --command="git stash apply" --desc="Apply latest stash" --category="git"
 *command list --category="git"
 *command detail --id=1
 *command find --query="git stash"
-*command update --id=1 --title="git-stash-new" --desc="Mô tả mới"
+*command update --id=1 --title="git-stash-new" --desc="New description"
 *command delete --id=1
 *command restore --id=1
-3. Quản lý bug
-*bug create --title="JWT token không refresh" --desc="Token mới không được tạo khi token cũ hết hạn" --severity="high" --steps="1. Đăng nhập\n2. Đợi token hết hạn\n3. Thực hiện API call" --environment={"os": "Ubuntu 22.04", "browser": "Chrome 118"}
+```
+
+### 3. Bug Management
+```
+*bug create --title="JWT token not refreshed" --desc="Token is not refreshed when expired" --severity="high"
 *bug list --status="open"
 *bug detail --id=1
-*bug update --id=1 --status="in_progress" --severity="medium" --title="JWT lỗi" --desc="Mô tả mới"
-4. Quản lý giải pháp (solution)
-*solution create --bug-id=1 --title="Sửa lỗi refresh token" --desc="Token refresh không hoạt động do thiếu kiểm tra" --code="const checkToken = async (req, res, next) => {...}"
+*bug update --id=1 --status="in_progress"
+```
+
+### 4. Solution Management
+```
+*solution create --bug-id=1 --title="Fix refresh token" --desc="Add token check" --code="const checkToken = async (req, res, next) => {...}"
 *solution list --bug-id=1
 *solution detail --id=1
-*solution update --id=1 --title="Tiêu đề mới" --desc="Mô tả mới" --code="Code mới"
-5. Tìm kiếm (search)
+*solution update --id=1 --title="New title" --desc="New description" --code="New code"
+```
+
+### 5. Search
+```
 *search token
 *search bugs refresh
 *search solutions authentication
-6. Kiểm tra trạng thái bot
+```
+
+### 6. Bot Status & Control
+```
 *bot status
 *bot deactivate
 *bot activate
 *bot reset
-7. Ping bot
-*ping# Devhelp-mezon
-# Devhelp-mezon
+```
+
+### 7. Ping
+```
+*ping
+```
+
+---
+
+## 🛡️ Resources
+
+- [NestJS Documentation](https://docs.nestjs.com)
+- [Mezon Platform](https://mezon.ai)
+- [Discord Support](https://discord.gg/G7Qnnhy)
+- [NestJS Courses](https://courses.nestjs.com)
+- [NestJS Devtools](https://devtools.nestjs.com)
+- [Jobs Board](https://jobs.nestjs.com)
+
+---
+
+## 🤝 Support
+
+Devhelp-mezon is MIT-licensed and open source.  
+For support, join our [MEZON](https://mezon.ai/invite/1840697798857592832) or check the [NestJS support page](https://docs.nestjs.com/support).
+
+---
