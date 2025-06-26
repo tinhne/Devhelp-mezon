@@ -1,3 +1,6 @@
+// Tăng giới hạn listener cho toàn bộ ứng dụng (nên đặt ở đầu file)
+require('events').EventEmitter.defaultMaxListeners = 50;
+
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { BotGateway } from './bot/events/bot.gateways';

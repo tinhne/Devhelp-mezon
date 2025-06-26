@@ -1,10 +1,11 @@
-import { ChannelMessage, EMarkdownType } from 'mezon-sdk';
+import { ChannelMessage } from 'mezon-sdk';
 import { Command } from 'src/bot/base/commandRegister.decorator';
 import { CommandMessage } from 'src/bot/base/command.abstract';
 import { MezonClientService } from 'src/mezon/services/mezon-client.service';
 import { BotStateService } from '../../services/bot-state.service';
 import { BotGateway } from '../../events/bot.gateways';
 import { Injectable } from '@nestjs/common';
+import { safeReply, createReplyOptions, createPreMarkdown } from 'src/bot/utils/reply-helpers';
 
 @Command('botstatus')
 @Injectable()
@@ -33,10 +34,13 @@ export class BotstatusCommand extends CommandMessage {
                       `Số server: ${status.connectionInfo.clanCount || status.connectionInfo.serverCount || 0}\n` +
                       (status.state !== 'active' ? `Lý do: ${status.inactiveReason}\n` : '') +
                       `\nSử dụng *activate để kích hoạt hoặc *deactivate để tắt bot.`;
-    
-    await messageChannel.reply({
-      t: statusText,
-      mk: [{ type: EMarkdownType.PRE, s: 0, e: statusText.length }],
-    });
+
+    await safeReply(
+      messageChannel,
+      createReplyOptions(
+        statusText,
+        createPreMarkdown(statusText)
+      )
+    );
   }
 }

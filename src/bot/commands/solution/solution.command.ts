@@ -7,6 +7,8 @@ import { MezonClientService } from 'src/mezon/services/mezon-client.service';
 import { getRandomColor } from 'src/bot/utils/helps';
 import { ButtonAction, MessageComponentType, BugStatus } from 'src/bot/constants/types';
 import { ActionRowComponent, ButtonComponent } from 'src/bot/constants/interfaces';
+import { parseArgs } from 'src/bot/utils/parse-args';
+import { safeReply, createReplyOptions, createPreMarkdown } from 'src/bot/utils/reply-helpers';
 
 @Command('solution')
 export class SolutionCommand extends CommandMessage {
@@ -22,13 +24,12 @@ export class SolutionCommand extends CommandMessage {
     const messageChannel = await this.getChannelMessage(message);
     if (!messageChannel) return;
 
-    // Xử lý các subcommand: create, list, detail, update
     if (args.length === 0) {
       return this.showHelp(messageChannel);
     }
 
     const subCommand = args[0].toLowerCase();
-    const remainingArgs = this.parseArgs(args.slice(1));
+    const remainingArgs = parseArgs(args.slice(1)); // Sử dụng helper mới
 
     try {
       switch (subCommand) {
@@ -45,439 +46,306 @@ export class SolutionCommand extends CommandMessage {
       }
     } catch (error) {
       console.error('Error in SolutionCommand:', error);
-      return messageChannel.reply({
-        t: `❌ Lỗi: ${error.message}`,
-        mk: [
-          {
-            type: EMarkdownType.PRE,
-            s: 0,
-            e: `❌ Lỗi: ${error.message}`.length,
-          },
-        ],
-      });
+      return safeReply(
+        messageChannel,
+        createReplyOptions(
+          `❌ Lỗi: ${error.message}`,
+          createPreMarkdown(`❌ Lỗi: ${error.message}`)
+        )
+      );
     }
   }
-
-  private parseArgs(args: string[]): Record<string, string> {
-    const result: Record<string, string> = {};
-    let currentKey = '';
-    let currentValue = '';
-    let inQuotes = false;
-
-    for (const arg of args) {
-      if (arg.startsWith('--')) {
-        // Nếu đang trong dấu ngoặc kép thì tiếp tục với giá trị
-        if (inQuotes) {
-          currentValue += ' ' + arg;
-          continue;
-        }
-
-        // Lưu key-value pair trước đó
-        if (currentKey) {
-          result[currentKey] = currentValue.trim();
-        }
-
-        // Bắt đầu key mới
-        const keyParts = arg.substring(2).split('=');
-        currentKey = keyParts[0];
-
-        if (keyParts.length > 1) {
-          currentValue = keyParts.slice(1).join('=');
-          
-          // Kiểm tra nếu bắt đầu với dấu ngoặc kép nhưng không kết thúc
-          if (currentValue.startsWith('"') && !currentValue.endsWith('"')) {
-            inQuotes = true;
-            currentValue = currentValue.substring(1); // Bỏ dấu ngoặc kép mở
-          } else if (currentValue.startsWith('"') && currentValue.endsWith('"')) {
-            currentValue = currentValue.substring(1, currentValue.length - 1); // Bỏ cả hai dấu ngoặc kép
-          }
-        } else {
-          currentValue = '';
-        }
-      } else {
-        // Tiếp tục với phần giá trị
-        if (currentValue) {
-          if (inQuotes) {
-            // Nếu đang trong dấu ngoặc kép
-            currentValue += ' ' + arg;
-            
-            // Kiểm tra nếu kết thúc dấu ngoặc kép
-            if (arg.endsWith('"')) {
-              inQuotes = false;
-              currentValue = currentValue.substring(0, currentValue.length - 1); // Bỏ dấu ngoặc kép đóng
-            }
-          } else {
-            currentValue += ' ' + arg;
-          }
-        } else {
-          currentValue = arg;
-        }
-      }
-    }
-
-    // Lưu key-value pair cuối cùng
-    if (currentKey) {
-      result[currentKey] = currentValue.trim();
-    }
-
-    return result;
-  }
+  
 
 private async showHelp(messageChannel: any): Promise<any> {
-  return messageChannel.reply({
-    t: '💡 Hướng dẫn sử dụng lệnh solution',
-    embed: [
-      {
-        color: getRandomColor(),
-        title: 'DevHelper - Solution Help',
-        description: 'Công cụ quản lý giải pháp cho bug:',
-        fields: [
-          {
-            name: '📋 Liệt kê giải pháp theo bug',
-            value: '*solution list --bug-id=47\n\n' +
-                  'Hiển thị tất cả giải pháp đã đề xuất cho bug có ID 47.'
+    return safeReply(messageChannel, {
+      t: '💡 Hướng dẫn sử dụng lệnh solution',
+      embed: [
+        {
+          color: getRandomColor(),
+          title: 'DevHelper - Solution Help',
+          description: 'Công cụ quản lý giải pháp cho bug:',
+          fields: [            {
+              name: '📋 Liệt kê giải pháp theo bug',
+              value: '*solution list --bug-id=47\n\n' +
+                'Hiển thị tất cả giải pháp đã đề xuất cho bug có ID 47.'
+            },
+            {
+              name: '🔍 Xem chi tiết giải pháp',
+              value: '*solution detail --id=28\n\n' +
+                'Hiển thị thông tin chi tiết của giải pháp có ID 28, bao gồm code và mô tả đầy đủ.'
+            },
+            {
+              name: '➕ Thêm giải pháp mới',
+              value: '*solution create --bug-id=47 --title="Sửa lỗi refresh token"\n\n' +
+                'Tham số bắt buộc: `--bug-id` và `--title`'
+            },
+            {
+              name: '✏️ Cập nhật giải pháp',
+              value: '*solution update --id=28 --title="Tiêu đề mới"\n' +
+                '*solution update --id=28 --code="// Code mới đã sửa lỗi"'
+            },
+            {
+              name: '💻 Ví dụ đầy đủ',
+              value: '*solution create --bug-id=47 --title="Sửa lỗi refresh token" --desc="Mô tả về lỗi" --code="function fix() { ... }"'
+            },
+            {
+              name: '📝 Lưu ý quan trọng',
+              value: '• Khi tạo giải pháp mới, phải có `--bug-id` và `--title`\n' +
+                '• Khi liệt kê giải pháp, phải cung cấp `--bug-id`\n' +
+                '• Khi xem chi tiết hoặc cập nhật, phải cung cấp `--id`\n' +
+                '• Tạo giải pháp cho bug "open" sẽ tự động đổi trạng thái thành "in_progress"'
+            }
+          ],
+          footer: {
+            text: 'Gõ *solution để hiển thị hướng dẫn này',
           },
-          {
-            name: '🔍 Xem chi tiết giải pháp',
-            value: '*solution detail --id=28\n\n' +
-                  'Hiển thị thông tin chi tiết của giải pháp có ID 28, bao gồm code và mô tả đầy đủ.'
-          },
-          {
-            name: '➕ Thêm giải pháp mới',
-            value: '*solution create --bug-id=47 --title="Sửa lỗi refresh token"\n\n' +
-                  'Tham số bắt buộc: `--bug-id` và `--title`'
-          },
-          {
-            name: '✏️ Cập nhật giải pháp',
-            value: '*solution update --id=28 --title="Tiêu đề mới"\n' +
-                  '*solution update --id=28 --code="// Code mới đã sửa lỗi"'
-          },
-          {
-            name: '💻 Ví dụ đầy đủ',
-            value: '*solution create --bug-id=47 --title="Sửa lỗi refresh token" --desc="Mô tả về lỗi" --code="function fix() { ... }"'
-          },
-          {
-            name: '📝 Lưu ý quan trọng',
-            value: '• Khi tạo giải pháp mới, phải có `--bug-id` và `--title`\n' +
-                  '• Khi liệt kê giải pháp, phải cung cấp `--bug-id`\n' +
-                  '• Khi xem chi tiết hoặc cập nhật, phải cung cấp `--id`\n' +
-                  '• Tạo giải pháp cho bug "open" sẽ tự động đổi trạng thái thành "in_progress"'
-          }
-        ],
-        footer: {
-          text: 'Gõ *solution để hiển thị hướng dẫn này',
         },
-      },
-    ],
-  });
-}
+      ],
+    });
+  }
 
   private async handleCreate(args: Record<string, string>, messageChannel: any): Promise<any> {
-    // Kiểm tra các tham số bắt buộc
     const { 'bug-id': bugId, title, desc, code } = args;
-    
+
     if (!bugId || isNaN(parseInt(bugId))) {
-      return messageChannel.reply({
-        t: '❌ Thiếu thông tin hoặc định dạng không hợp lệ: Vui lòng cung cấp --bug-id (số).',
-        mk: [
-          {
-            type: EMarkdownType.PRE,
-            s: 0,
-            e: '❌ Thiếu thông tin hoặc định dạng không hợp lệ: Vui lòng cung cấp --bug-id (số).'.length,
-          },
-        ],
-      });
+      return safeReply(
+        messageChannel,
+        createReplyOptions(
+          '❌ Thiếu thông tin hoặc định dạng không hợp lệ: Vui lòng cung cấp --bug-id (số).',
+          createPreMarkdown('❌ Thiếu thông tin hoặc định dạng không hợp lệ: Vui lòng cung cấp --bug-id (số).')
+        )
+      );
     }
 
     if (!title) {
-      return messageChannel.reply({
-        t: '❌ Thiếu thông tin: Vui lòng cung cấp --title.',
-        mk: [
-          {
-            type: EMarkdownType.PRE,
-            s: 0,
-            e: '❌ Thiếu thông tin: Vui lòng cung cấp --title.'.length,
-          },
-        ],
-      });
+      return safeReply(
+        messageChannel,
+        createReplyOptions(
+          '❌ Thiếu thông tin: Vui lòng cung cấp --title.',
+          createPreMarkdown('❌ Thiếu thông tin: Vui lòng cung cấp --title.')
+        )
+      );
     }
 
     try {
-      // Kiểm tra bug có tồn tại không
       const bug = await this.bugService.findById(parseInt(bugId));
-      
-      // Lưu giải pháp vào database
       const newSolution = await this.solutionService.create({
         title,
         description: desc || '',
         code: code || '',
         bug: bug,
       });
-      
-      // Cập nhật trạng thái bug nếu cần
+
       if (bug.status === 'open') {
         await this.bugService.update(bug.id, {
           status: BugStatus.IN_PROGRESS,
         });
       }
 
-      // Gửi thông báo thành công
-      return messageChannel.reply({
-        t: `✅ Đã thêm giải pháp! ID: ${newSolution.id}\nBug: #${bug.id} - ${bug.title}\n\nSử dụng /solution detail --id=${newSolution.id} để xem chi tiết.`,
-        mk: [
-          {
-            type: EMarkdownType.PRE,
-            s: 0,
-            e: `✅ Đã thêm giải pháp! ID: ${newSolution.id}\nBug: #${bug.id} - ${bug.title}\n\nSử dụng /solution detail --id=${newSolution.id} để xem chi tiết.`.length,
-          },
-        ],
-      } as any);
+      return safeReply(
+        messageChannel,
+        createReplyOptions(
+          `✅ Đã thêm giải pháp! ID: ${newSolution.id}\nBug: #${bug.id} - ${bug.title}\n\nSử dụng /solution detail --id=${newSolution.id} để xem chi tiết.`,
+          createPreMarkdown(`✅ Đã thêm giải pháp! ID: ${newSolution.id}\nBug: #${bug.id} - ${bug.title}\n\nSử dụng /solution detail --id=${newSolution.id} để xem chi tiết.`)
+        )
+      );
     } catch (error) {
-      return messageChannel.reply({
-        t: `❌ Lỗi: ${error.message}`,
-        mk: [
-          {
-            type: EMarkdownType.PRE,
-            s: 0,
-            e: `❌ Lỗi: ${error.message}`.length,
-          },
-        ],
-      });
+      return safeReply(
+        messageChannel,
+        createReplyOptions(
+          `❌ Lỗi: ${error.message}`,
+          createPreMarkdown(`❌ Lỗi: ${error.message}`)
+        )
+      );
     }
   }
 
   private async handleList(args: Record<string, string>, messageChannel: any): Promise<any> {
     const { 'bug-id': bugId } = args;
-    
+
     if (!bugId || isNaN(parseInt(bugId))) {
-      return messageChannel.reply({
-        t: '❌ Thiếu thông tin hoặc định dạng không hợp lệ: Vui lòng cung cấp --bug-id (số).',
-        mk: [
-          {
-            type: EMarkdownType.PRE,
-            s: 0,
-            e: '❌ Thiếu thông tin hoặc định dạng không hợp lệ: Vui lòng cung cấp --bug-id (số).'.length,
-          },
-        ],
-      });
+      return safeReply(
+        messageChannel,
+        createReplyOptions(
+          '❌ Thiếu thông tin hoặc định dạng không hợp lệ: Vui lòng cung cấp --bug-id (số).',
+          createPreMarkdown('❌ Thiếu thông tin hoặc định dạng không hợp lệ: Vui lòng cung cấp --bug-id (số).')
+        )
+      );
     }
 
     try {
-      // Kiểm tra bug có tồn tại không
       const bug = await this.bugService.findById(parseInt(bugId));
-      
-      // Lấy danh sách giải pháp cho bug
       const solutions = await this.solutionService.listByBugId(parseInt(bugId));
-      
+
       if (solutions.length === 0) {
         const actionRow: ActionRowComponent = {
           type: MessageComponentType.ACTION_ROW,
-          // components: [createButton],
         } as ActionRowComponent;
 
-        return messageChannel.reply({
-          t: `📋 Không tìm thấy giải pháp nào cho bug #${bugId}: "${bug.title}".\n\nSử dụng /solution create --bug-id=${bugId} để thêm giải pháp.`,
-          mk: [
-            {
-              type: EMarkdownType.PRE,
-              s: 0,
-              e: `📋 Không tìm thấy giải pháp nào cho bug #${bugId}: "${bug.title}".\n\nSử dụng /solution create --bug-id=${bugId} để thêm giải pháp.`.length,
-            },
-          ],
-          components: [actionRow],
-        } as any);
+        return safeReply(
+          messageChannel,
+          {
+            ...createReplyOptions(
+              `📋 Không tìm thấy giải pháp nào cho bug #${bugId}: "${bug.title}".\n\nSử dụng /solution create --bug-id=${bugId} để thêm giải pháp.`,
+              createPreMarkdown(`📋 Không tìm thấy giải pháp nào cho bug #${bugId}: "${bug.title}".\n\nSử dụng /solution create --bug-id=${bugId} để thêm giải pháp.`)
+            ),
+            components: [actionRow],
+          }
+        );
       }
 
-      // Tạo danh sách giải pháp
       let listText = `📋 Giải pháp cho bug #${bugId}: "${bug.title}":\n\n`;
-      
       solutions.forEach((solution, index) => {
         listText += `${index + 1}. #${solution.id}: ${solution.title}\n`;
       });
-      
       listText += '\n📌 Các lệnh bạn có thể dùng:\n';
       listText += `• /solution detail --id=${solutions[0].id}    (Xem chi tiết giải pháp)\n`;
       listText += `• /solution update --id=${solutions[0].id}    (Cập nhật giải pháp)\n`;
       listText += `• /solution create --bug-id=${bugId}    (Thêm giải pháp mới)\n`;
 
-      return messageChannel.reply({
-        t: listText,
-        mk: [
-          {
-            type: EMarkdownType.PRE,
-            s: 0,
-            e: listText.length,
-          },
-        ],
-      } as any);
+      return safeReply(
+        messageChannel,
+        createReplyOptions(
+          listText,
+          createPreMarkdown(listText)
+        )
+      );
     } catch (error) {
-      return messageChannel.reply({
-        t: `❌ Lỗi: ${error.message}`,
-        mk: [
-          {
-            type: EMarkdownType.PRE,
-            s: 0,
-            e: `❌ Lỗi: ${error.message}`.length,
-          },
-        ],
-      });
+      return safeReply(
+        messageChannel,
+        createReplyOptions(
+          `❌ Lỗi: ${error.message}`,
+          createPreMarkdown(`❌ Lỗi: ${error.message}`)
+        )
+      );
     }
   }
 
   private async handleDetail(args: Record<string, string>, messageChannel: any): Promise<any> {
     const { id } = args;
-    
+
     if (!id || isNaN(parseInt(id))) {
-      return messageChannel.reply({
-        t: '❌ Thiếu thông tin hoặc định dạng không hợp lệ: Vui lòng cung cấp --id (số).',
-        mk: [
-          {
-            type: EMarkdownType.PRE,
-            s: 0,
-            e: '❌ Thiếu thông tin hoặc định dạng không hợp lệ: Vui lòng cung cấp --id (số).'.length,
-          },
-        ],
-      });
+      return safeReply(
+        messageChannel,
+        createReplyOptions(
+          '❌ Thiếu thông tin hoặc định dạng không hợp lệ: Vui lòng cung cấp --id (số).',
+          createPreMarkdown('❌ Thiếu thông tin hoặc định dạng không hợp lệ: Vui lòng cung cấp --id (số).')
+        )
+      );
     }
 
     try {
       const solution = await this.solutionService.findById(parseInt(id));
-      
-      // Format thời gian
       const createdAt = new Date(solution.createdAt);
       const formattedDate = `${createdAt.toLocaleDateString()}, ${createdAt.toLocaleTimeString()}`;
-      
-      // Tạo phần hiển thị code
       let codeDisplay = 'Không có code';
       if (solution.code) {
         codeDisplay = `\`\`\`\n${solution.code}\n\`\`\``;
       }
 
-      return messageChannel.reply({
-        embed: [
-          {
-            color: getRandomColor(),
-            title: `💡 Giải pháp #${solution.id}: "${solution.title}"`,
-            fields: [
-              {
-                name: 'Cho bug',
-                value: `#${solution.bug.id} - ${solution.bug.title}`,
+      return safeReply(
+        messageChannel,
+        {
+          embed: [
+            {
+              color: getRandomColor(),
+              title: `💡 Giải pháp #${solution.id}: "${solution.title}"`,
+              fields: [
+                {
+                  name: 'Cho bug',
+                  value: `#${solution.bug.id} - ${solution.bug.title}`,
+                },
+                {
+                  name: 'Mô tả',
+                  value: solution.description || 'Không có mô tả',
+                },
+                {
+                  name: 'Code',
+                  value: codeDisplay,
+                },
+                {
+                  name: 'Đã tạo',
+                  value: formattedDate,
+                },
+              ],
+              footer: {
+                text: 'DevHelper Bot',
               },
-              {
-                name: 'Mô tả',
-                value: solution.description || 'Không có mô tả',
-              },
-              {
-                name: 'Code',
-                value: codeDisplay,
-              },
-              {
-                name: 'Đã tạo',
-                value: formattedDate,
-              },
-            ],
-            footer: {
-              text: 'DevHelper Bot',
             },
-          },
-        ],
-      } as any);
+          ],
+        }
+      );
     } catch (error) {
-      return messageChannel.reply({
-        t: `❌ Lỗi: ${error.message}`,
-        mk: [
-          {
-            type: EMarkdownType.PRE,
-            s: 0,
-            e: `❌ Lỗi: ${error.message}`.length,
-          },
-        ],
-      });
+      return safeReply(
+        messageChannel,
+        createReplyOptions(
+          `❌ Lỗi: ${error.message}`,
+          createPreMarkdown(`❌ Lỗi: ${error.message}`)
+        )
+      );
     }
   }
 
   private async handleUpdate(args: Record<string, string>, messageChannel: any): Promise<any> {
     const { id, title, desc, code } = args;
-    
+
     if (!id || isNaN(parseInt(id))) {
-      return messageChannel.reply({
-        t: '❌ Thiếu thông tin hoặc định dạng không hợp lệ: Vui lòng cung cấp --id (số).',
-        mk: [
-          {
-            type: EMarkdownType.PRE,
-            s: 0,
-            e: '❌ Thiếu thông tin hoặc định dạng không hợp lệ: Vui lòng cung cấp --id (số).'.length,
-          },
-        ],
-      });
+      return safeReply(
+        messageChannel,
+        createReplyOptions(
+          '❌ Thiếu thông tin hoặc định dạng không hợp lệ: Vui lòng cung cấp --id (số).',
+          createPreMarkdown('❌ Thiếu thông tin hoặc định dạng không hợp lệ: Vui lòng cung cấp --id (số).')
+        )
+      );
     }
 
     try {
-      // Kiểm tra solution có tồn tại không
       const existingSolution = await this.solutionService.findById(parseInt(id));
-      
-      // Tạo object với các trường cần cập nhật
       const updateData: any = {};
       if (title) updateData.title = title;
       if (desc !== undefined) updateData.description = desc;
       if (code !== undefined) updateData.code = code;
-      
-      // Kiểm tra xem có gì để cập nhật không
+
       if (Object.keys(updateData).length === 0) {
-        return messageChannel.reply({
-          t: '❌ Không có thông tin nào để cập nhật.',
-          mk: [
-            {
-              type: EMarkdownType.PRE,
-              s: 0,
-              e: '❌ Không có thông tin nào để cập nhật.'.length,
-            },
-          ],
-        });
+        return safeReply(
+          messageChannel,
+          createReplyOptions(
+            '❌ Không có thông tin nào để cập nhật.',
+            createPreMarkdown('❌ Không có thông tin nào để cập nhật.')
+          )
+        );
       }
-      
-      // Cập nhật vào database
+
       await this.solutionService.update(parseInt(id), updateData);
-      
-      // Lấy solution sau khi cập nhật
       const updatedSolution = await this.solutionService.findById(parseInt(id));
-      
-      // So sánh và hiển thị các trường đã thay đổi
+
       let changesText = '';
       for (const key of Object.keys(updateData)) {
         let oldValue = existingSolution[key];
         let newValue = updatedSolution[key];
-        
-        // Format cho dễ đọc nếu là code
         if (key === 'code') {
           oldValue = oldValue ? '(có code)' : '(không có code)';
           newValue = newValue ? '(có code mới)' : '(không có code)';
         }
-        
         changesText += `• ${key}: ${oldValue} ➔ ${newValue}\n`;
       }
-      
-      return messageChannel.reply({
-        t: `✅ Đã cập nhật giải pháp #${id}:\n\n${changesText}\nSử dụng /solution detail --id=${id} để xem chi tiết.`,
-        mk: [
-          {
-            type: EMarkdownType.PRE,
-            s: 0,
-            e: `✅ Đã cập nhật giải pháp #${id}:\n\n${changesText}\nSử dụng /solution detail --id=${id} để xem chi tiết.`.length,
-          },
-        ],
-      } as any);
+
+      return safeReply(
+        messageChannel,
+        createReplyOptions(
+          `✅ Đã cập nhật giải pháp #${id}:\n\n${changesText}\nSử dụng /solution detail --id=${id} để xem chi tiết.`,
+          createPreMarkdown(`✅ Đã cập nhật giải pháp #${id}:\n\n${changesText}\nSử dụng /solution detail --id=${id} để xem chi tiết.`)
+        )
+      );
     } catch (error) {
-      return messageChannel.reply({
-        t: `❌ Lỗi: ${error.message}`,
-        mk: [
-          {
-            type: EMarkdownType.PRE,
-            s: 0,
-            e: `❌ Lỗi: ${error.message}`.length,
-          },
-        ],
-      });
+      return safeReply(
+        messageChannel,
+        createReplyOptions(
+          `❌ Lỗi: ${error.message}`,
+          createPreMarkdown(`❌ Lỗi: ${error.message}`)
+        )
+      );
     }
   }
 }

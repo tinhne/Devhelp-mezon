@@ -10,8 +10,8 @@ import { ButtonStyle, MessageComponentType, ButtonAction } from '../constants/ty
 import { ActionRowComponent, ButtonComponent } from '../constants/interfaces';
 import { getRandomColor } from '../utils/helps';
 import { createButton, createActionRow } from '../utils/component-helpers';
-import { createPreMarkdown } from '../utils/reply-helpers';
 import { BotStateService } from '../services/bot-state.service';
+import { createPreMarkdown, safeReply, createReplyOptions } from '../utils/reply-helpers';
 
 // Define the expected event payload type if not exported by mezon-sdk
 interface MessageButtonClicked {
@@ -124,24 +124,21 @@ export class ListenerMessageButtonClicked {
   }
 
   // Helper methods để hiển thị chi tiết
-  private async handleViewDetail(type: string, id: string, message: any) {
+    private async handleViewDetail(type: string, id: string, message: any) {
     try {
       switch (type) {
         case 'command':
           const command = await this.commandService.findById(parseInt(id));
           await this.displayCommandDetail(message, command);
           break;
-
         case 'bug':
           const bug = await this.bugService.findById(parseInt(id));
           await this.displayBugDetail(message, bug);
           break;
-
         case 'solution':
           const solution = await this.solutionService.findById(parseInt(id));
           await this.displaySolutionDetail(message, solution);
           break;
-
         default:
           this.logger.warn(`Unknown view type: ${type}`);
       }
@@ -150,16 +147,13 @@ export class ListenerMessageButtonClicked {
         `Error handling view detail: ${error.message}`,
         error.stack,
       );
-      await message.reply({
-        t: `❌ Lỗi: ${error.message}`,
-        mk: [
-          {
-            type: EMarkdownType.PRE,
-            s: 0,
-            e: `❌ Lỗi: ${error.message}`.length,
-          },
-        ],
-      });
+      await safeReply(
+        message,
+        createReplyOptions(
+          `❌ Lỗi: ${error.message}`,
+          createPreMarkdown(`❌ Lỗi: ${error.message}`)
+        )
+      );
     }
   }
 
@@ -170,17 +164,14 @@ export class ListenerMessageButtonClicked {
           const command = await this.commandService.findById(parseInt(id));
           await this.displayCommandUpdateForm(message, command);
           break;
-
         case 'bug':
           const bug = await this.bugService.findById(parseInt(id));
           await this.displayBugUpdateForm(message, bug);
           break;
-
         case 'solution':
           const solution = await this.solutionService.findById(parseInt(id));
           await this.displaySolutionUpdateForm(message, solution);
           break;
-
         default:
           this.logger.warn(`Unknown update type: ${type}`);
       }
@@ -189,16 +180,13 @@ export class ListenerMessageButtonClicked {
         `Error handling update form: ${error.message}`,
         error.stack,
       );
-      await message.reply({
-        t: `❌ Lỗi: ${error.message}`,
-        mk: [
-          {
-            type: EMarkdownType.PRE,
-            s: 0,
-            e: `❌ Lỗi: ${error.message}`.length,
-          },
-        ],
-      });
+      await safeReply(
+        message,
+        createReplyOptions(
+          `❌ Lỗi: ${error.message}`,
+          createPreMarkdown(`❌ Lỗi: ${error.message}`)
+        )
+      );
     }
   }
 
@@ -208,45 +196,40 @@ export class ListenerMessageButtonClicked {
         const command = await this.commandService.findById(parseInt(id));
         await this.commandService.softDelete(parseInt(id));
 
-        await message.reply({
-          t: `🗑️ Đã xóa lệnh #${id} "${command.title}"\nSử dụng /command restore --id=${id} để khôi phục.`,
-          mk: [
-            {
-              type: EMarkdownType.PRE,
-              s: 0,
-              e: `🗑️ Đã xóa lệnh #${id} "${command.title}"\nSử dụng /command restore --id=${id} để khôi phục.`
-                .length,
-            },
-          ],
-          components: [
-            {
-              type: MessageComponentType.ACTION_ROW,
-              components: [
-                {
-                  type: MessageComponentType.BUTTON,
-                  style: ButtonStyle.GREEN,
-                  label: 'Khôi Phục',
-                  custom_id: `${ButtonAction.RESTORE}:command:${id}`,
-                },
-              ],
-            },
-          ],
-        });
+        await safeReply(
+          message,
+          {
+            ...createReplyOptions(
+              `🗑️ Đã xóa lệnh #${id} "${command.title}"\nSử dụng /command restore --id=${id} để khôi phục.`,
+              createPreMarkdown(`🗑️ Đã xóa lệnh #${id} "${command.title}"\nSử dụng /command restore --id=${id} để khôi phục.`)
+            ),
+            components: [
+              {
+                type: MessageComponentType.ACTION_ROW,
+                components: [
+                  {
+                    type: MessageComponentType.BUTTON,
+                    style: ButtonStyle.GREEN,
+                    label: 'Khôi Phục',
+                    custom_id: `${ButtonAction.RESTORE}:command:${id}`,
+                  },
+                ],
+              },
+            ],
+          }
+        );
       } else {
         this.logger.warn(`Delete not implemented for type: ${type}`);
       }
     } catch (error) {
       this.logger.error(`Error handling delete: ${error.message}`, error.stack);
-      await message.reply({
-        t: `❌ Lỗi: ${error.message}`,
-        mk: [
-          {
-            type: EMarkdownType.PRE,
-            s: 0,
-            e: `❌ Lỗi: ${error.message}`.length,
-          },
-        ],
-      });
+      await safeReply(
+        message,
+        createReplyOptions(
+          `❌ Lỗi: ${error.message}`,
+          createPreMarkdown(`❌ Lỗi: ${error.message}`)
+        )
+      );
     }
   }
 
@@ -256,30 +239,28 @@ export class ListenerMessageButtonClicked {
         await this.commandService.restore(parseInt(id));
         const command = await this.commandService.findById(parseInt(id));
 
-        await message.reply({
-          t: `♻️ Đã khôi phục lệnh #${id} "${command.title}"\nSử dụng /command detail --id=${id} để xem chi tiết.`,
-          mk: [
-            {
-              type: EMarkdownType.PRE,
-              s: 0,
-              e: `♻️ Đã khôi phục lệnh #${id} "${command.title}"\nSử dụng /command detail --id=${id} để xem chi tiết.`
-                .length,
-            },
-          ],
-          components: [
-            {
-              type: MessageComponentType.ACTION_ROW,
-              components: [
-                {
-                  type: MessageComponentType.BUTTON,
-                  style: ButtonStyle.BLUE,
-                  label: 'Xem Chi Tiết',
-                  custom_id: `${ButtonAction.VIEW}:command:${id}`,
-                },
-              ],
-            },
-          ],
-        });
+        await safeReply(
+          message,
+          {
+            ...createReplyOptions(
+              `♻️ Đã khôi phục lệnh #${id} "${command.title}"\nSử dụng /command detail --id=${id} để xem chi tiết.`,
+              createPreMarkdown(`♻️ Đã khôi phục lệnh #${id} "${command.title}"\nSử dụng /command detail --id=${id} để xem chi tiết.`)
+            ),
+            components: [
+              {
+                type: MessageComponentType.ACTION_ROW,
+                components: [
+                  {
+                    type: MessageComponentType.BUTTON,
+                    style: ButtonStyle.BLUE,
+                    label: 'Xem Chi Tiết',
+                    custom_id: `${ButtonAction.VIEW}:command:${id}`,
+                  },
+                ],
+              },
+            ],
+          }
+        );
       } else {
         this.logger.warn(`Restore not implemented for type: ${type}`);
       }
@@ -288,16 +269,13 @@ export class ListenerMessageButtonClicked {
         `Error handling restore: ${error.message}`,
         error.stack,
       );
-      await message.reply({
-        t: `❌ Lỗi: ${error.message}`,
-        mk: [
-          {
-            type: EMarkdownType.PRE,
-            s: 0,
-            e: `❌ Lỗi: ${error.message}`.length,
-          },
-        ],
-      });
+      await safeReply(
+        message,
+        createReplyOptions(
+          `❌ Lỗi: ${error.message}`,
+          createPreMarkdown(`❌ Lỗi: ${error.message}`)
+        )
+      );
     }
   }
 
@@ -309,19 +287,16 @@ export class ListenerMessageButtonClicked {
           const bug = await this.bugService.findById(parseInt(id));
 
           // Hiển thị form thêm giải pháp cho bug này
-          await message.reply({
-            t: `💡 Thêm giải pháp cho bug #${bug.id}: "${bug.title}"\n\nSử dụng lệnh sau để thêm giải pháp:\n/solution create --bug-id=${bug.id} --title="Tiêu đề giải pháp" --desc="Mô tả giải pháp" --code="Code giải pháp"`,
-            mk: [
-              {
-                type: EMarkdownType.PRE,
-                s: 0,
-                e: `💡 Thêm giải pháp cho bug #${bug.id}: "${bug.title}"\n\nSử dụng lệnh sau để thêm giải pháp:\n/solution create --bug-id=${bug.id} --title="Tiêu đề giải pháp" --desc="Mô tả giải pháp" --code="Code giải pháp"`
-                  .length,
-              },
-            ],
-          });
+          await safeReply(
+            message,
+            createReplyOptions(
+              `💡 Thêm giải pháp cho bug #${bug.id}: "${bug.title}"\n\nSử dụng lệnh sau để thêm giải pháp:\n/solution create --bug-id=${bug.id} --title="Tiêu đề giải pháp" --desc="Mô tả giải pháp" --code="Code giải pháp"`,
+              createPreMarkdown(
+                `💡 Thêm giải pháp cho bug #${bug.id}: "${bug.title}"\n\nSử dụng lệnh sau để thêm giải pháp:\n/solution create --bug-id=${bug.id} --title="Tiêu đề giải pháp" --desc="Mô tả giải pháp" --code="Code giải pháp"`
+              )
+            )
+          );
           break;
-
         default:
           this.logger.warn(`Add form not implemented for type: ${type}`);
       }
@@ -330,16 +305,13 @@ export class ListenerMessageButtonClicked {
         `Error handling add form: ${error.message}`,
         error.stack,
       );
-      await message.reply({
-        t: `❌ Lỗi: ${error.message}`,
-        mk: [
-          {
-            type: EMarkdownType.PRE,
-            s: 0,
-            e: `❌ Lỗi: ${error.message}`.length,
-          },
-        ],
-      });
+      await safeReply(
+        message,
+        createReplyOptions(
+          `❌ Lỗi: ${error.message}`,
+          createPreMarkdown(`❌ Lỗi: ${error.message}`)
+        )
+      );
     }
   }
 
@@ -348,16 +320,13 @@ export class ListenerMessageButtonClicked {
       // Chức năng tìm kiếm từ button
       const query = id; // id trong trường hợp này là query cần tìm kiếm
 
-      await message.reply({
-        t: `🔍 Đang tìm kiếm cho "${query}"...`,
-        mk: [
-          {
-            type: EMarkdownType.PRE,
-            s: 0,
-            e: `🔍 Đang tìm kiếm cho "${query}"...`.length,
-          },
-        ],
-      });
+      await safeReply(
+        message,
+        createReplyOptions(
+          `🔍 Đang tìm kiếm cho "${query}"...`,
+          createPreMarkdown(`🔍 Đang tìm kiếm cho "${query}"...`)
+        )
+      );
 
       if (type === 'all') {
         const results = await this.searchService.search(query);
@@ -371,16 +340,13 @@ export class ListenerMessageButtonClicked {
       }
     } catch (error) {
       this.logger.error(`Error handling search: ${error.message}`, error.stack);
-      await message.reply({
-        t: `❌ Lỗi khi tìm kiếm: ${error.message}`,
-        mk: [
-          {
-            type: EMarkdownType.PRE,
-            s: 0,
-            e: `❌ Lỗi khi tìm kiếm: ${error.message}`.length,
-          },
-        ],
-      });
+      await safeReply(
+        message,
+        createReplyOptions(
+          `❌ Lỗi khi tìm kiếm: ${error.message}`,
+          createPreMarkdown(`❌ Lỗi khi tìm kiếm: ${error.message}`)
+        )
+      );
     }
   }
 
@@ -388,7 +354,7 @@ export class ListenerMessageButtonClicked {
     try {
       switch (type) {
         case 'command':
-          await message.reply({
+          await safeReply(message, {
             embed: [
               {
                 color: getRandomColor(),
@@ -434,9 +400,8 @@ export class ListenerMessageButtonClicked {
             ],
           });
           break;
-
         case 'bug':
-          await message.reply({
+          await safeReply(message, {
             embed: [
               {
                 color: getRandomColor(),
@@ -467,9 +432,8 @@ export class ListenerMessageButtonClicked {
             ],
           });
           break;
-
         case 'solution':
-          await message.reply({
+          await safeReply(message, {
             embed: [
               {
                 color: getRandomColor(),
@@ -501,24 +465,24 @@ export class ListenerMessageButtonClicked {
             ],
           });
           break;
-
         default:
-          await message.reply({
-            t: 'Chọn một loại hướng dẫn cụ thể (command, bug, solution).',
-          });
+          await safeReply(
+            message,
+            createReplyOptions(
+              'Chọn một loại hướng dẫn cụ thể (command, bug, solution).',
+              createPreMarkdown('Chọn một loại hướng dẫn cụ thể (command, bug, solution).')
+            )
+          );
       }
     } catch (error) {
       this.logger.error(`Error handling help: ${error.message}`, error.stack);
-      await message.reply({
-        t: `❌ Lỗi khi hiển thị hướng dẫn: ${error.message}`,
-        mk: [
-          {
-            type: EMarkdownType.PRE,
-            s: 0,
-            e: `❌ Lỗi khi hiển thị hướng dẫn: ${error.message}`.length,
-          },
-        ],
-      });
+      await safeReply(
+        message,
+        createReplyOptions(
+          `❌ Lỗi khi hiển thị hướng dẫn: ${error.message}`,
+          createPreMarkdown(`❌ Lỗi khi hiển thị hướng dẫn: ${error.message}`)
+        )
+      );
     }
   }
 

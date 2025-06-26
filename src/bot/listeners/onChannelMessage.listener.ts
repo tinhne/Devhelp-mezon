@@ -4,6 +4,7 @@ import { CommandBase } from '../base/command.handle';
 import { Injectable, Logger } from '@nestjs/common';
 import { BotStateService } from '../services/bot-state.service';
 import { BotGateway } from '../events/bot.gateways';
+import { safeReply, createReplyOptions, createPreMarkdown } from '../utils/reply-helpers';
 
 @Injectable()
 export class ListenerChannelMessage {
@@ -87,65 +88,73 @@ export class ListenerChannelMessage {
   // Rest of the file remains unchanged
   // Handle bot deactivation
   private async handleDeactivation(message: ChannelMessage) {
-    // Giữ nguyên code hiện tại
     const messageChannel = await this.getMessageChannel(message);
     if (!messageChannel) return;
-    
-    // Check if already inactive
+
     if (!this.botStateService.isActive()) {
-      await messageChannel.reply({
-        t: '❌ Bot đã ở trạng thái không hoạt động.',
-        mk: [{ type: EMarkdownType.PRE, s: 0, e: 38 }],
-      });
+      // Sử dụng helper reply
+      await safeReply(
+        messageChannel,
+        createReplyOptions(
+          '❌ Bot đã ở trạng thái không hoạt động.',
+          createPreMarkdown('❌ Bot đã ở trạng thái không hoạt động.')
+        )
+      );
       return;
     }
     
     // Extract reason if provided
-    const content = message?.content?.t || '';
+const content = message?.content?.t || '';
     const reason = content.split(' ').slice(1).join(' ') || 'Được tắt bằng lệnh thủ công';
-    
-    // Deactivate the bot
+
     await this.botGateway.deactivateBot(reason);
-    
-    // Send confirmation
-    await messageChannel.reply({
-      t: `🛑 Bot đã tạm dừng hoạt động.\nLý do: ${reason}\n\nGõ *activate để kích hoạt lại bot.`,
-      mk: [{ type: EMarkdownType.PRE, s: 0, e: 50 + reason.length }],
-    });
+
+    await safeReply(
+      messageChannel,
+      createReplyOptions(
+        `🛑 Bot đã tạm dừng hoạt động.\nLý do: ${reason}\n\nGõ *activate để kích hoạt lại bot.`,
+        createPreMarkdown(`🛑 Bot đã tạm dừng hoạt động.\nLý do: ${reason}\n\nGõ *activate để kích hoạt lại bot.`)
+      )
+    );
   }
-  
+
   // Handle bot activation
   private async handleActivation(message: ChannelMessage) {
-    // Giữ nguyên code hiện tại
     const messageChannel = await this.getMessageChannel(message);
     if (!messageChannel) return;
-    
-    // Check if already active
+
     if (this.botStateService.isActive()) {
-      await messageChannel.reply({
-        t: '✅ Bot đã đang hoạt động.',
-        mk: [{ type: EMarkdownType.PRE, s: 0, e: 24 }],
-      });
+      await safeReply(
+        messageChannel,
+        createReplyOptions(
+          '✅ Bot đã đang hoạt động.',
+          createPreMarkdown('✅ Bot đã đang hoạt động.')
+        )
+      );
       return;
     }
-    
-    // Activate the bot
+
     const success = await this.botGateway.activateBot();
-    
-    // Send confirmation
+
     if (success) {
-      await messageChannel.reply({
-        t: '✅ Bot đã được kích hoạt và sẵn sàng nhận lệnh!',
-        mk: [{ type: EMarkdownType.PRE, s: 0, e: 38 }],
-      });
+      await safeReply(
+        messageChannel,
+        createReplyOptions(
+          '✅ Bot đã được kích hoạt và sẵn sàng nhận lệnh!',
+          createPreMarkdown('✅ Bot đã được kích hoạt và sẵn sàng nhận lệnh!')
+        )
+      );
     } else {
-      await messageChannel.reply({
-        t: `❌ Kích hoạt bot thất bại: ${this.botStateService.getInactiveReason()}`,
-        mk: [{ type: EMarkdownType.PRE, s: 0, e: 30 + this.botStateService.getInactiveReason().length }],
-      });
+      const reason = this.botStateService.getInactiveReason();
+      await safeReply(
+        messageChannel,
+        createReplyOptions(
+          `❌ Kích hoạt bot thất bại: ${reason}`,
+          createPreMarkdown(`❌ Kích hoạt bot thất bại: ${reason}`)
+        )
+      );
     }
-  }
-  
+  }  
   // Handle bot status request
   private async handleBotStatus(message: ChannelMessage) {
     // Giữ nguyên code hiện tại
