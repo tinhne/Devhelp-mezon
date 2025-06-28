@@ -23,41 +23,47 @@ export abstract class CommandMessage {
     return filteredOptions;
   }
 
-
-
-
   protected async getChannelMessage(message: ChannelMessage) {
     try {
-      // Kiểm tra xem message có clan_id không
-      const serverId = message.server_id || (message as any).clan_id;
-      this.logger.debug(`Getting message details - server/clan: ${serverId}, channel: ${message.channel_id}, message: ${message.message_id}`);
+      // Lấy clanId (clan_id hoặc server_id)
+      const clanId = message.clan_id || message.server_id;
+      this.logger.debug(`Getting message details - clan: ${clanId}, channel: ${message.channel_id}, message: ${message.message_id}`);
 
-      if (!serverId || serverId === "0") { // Thêm kiểm tra giá trị "0"
-        this.logger.warn(`Invalid server_id or clan_id found in message: ${serverId}`);
-        // Tiếp tục thực hiện vì một số tin nhắn có thể có clan_id = "0" nhưng vẫn hợp lệ
+      // --- Tự động fetch clan nếu chưa có ---
+      if ((this.client as any).clans && clanId && clanId !== "0") {
+        let clan = (this.client as any).clans.get(clanId);
+        if (!clan) {
+          this.logger.warn(`[AUTO-FETCH] Clan ${clanId} chưa có trong cache, tiến hành fetch lại...`);
+          try {
+            clan = await (this.client as any).clans.fetch(clanId);
+            this.logger.log(`[AUTO-FETCH] Đã fetch clan ${clanId} thành công`);
+          } catch (err) {
+            this.logger.error(`[AUTO-FETCH] Không thể fetch clan ${clanId}: ${err.message}`);
+            // Trả về null để các lệnh không bị lỗi nặng hơn
+            return null;
+          }
+        }
       }
 
-      // Thêm log chi tiết hơn về trạng thái client
+      // Log trạng thái client chỉ liên quan đến clan
       this.logger.debug(`Client info: ${JSON.stringify({
-        hasServers: !!this.client.servers,
         hasClans: !!(this.client as any).clans,
         clanCount: (this.client as any).clans?.size || 0,
-        serverCount: this.client.servers?.size || 0,
         userId: this.client.user?.id
       })}`);
 
-      // Tạo một đối tượng message giả để có phương thức reply
+      // Đối tượng message giả để có phương thức reply
       return {
         reply: async (options: any) => {
           try {
-            // Ưu tiên sử dụng clan và channel
+            // Luôn ưu tiên sử dụng clan và channel
             if ((this.client as any).clans) {
-              const clan = (this.client as any).clans.get(serverId);
+              const clan = (this.client as any).clans.get(clanId);
               if (clan) {
-                this.logger.debug(`Found clan with ID: ${serverId}`);
+                this.logger.debug(`Found clan with ID: ${clanId}`);
                 const channel = await clan.channels.fetch(message.channel_id);
                 if (channel) {
-                  this.logger.debug(`Successfully fetched channel ${message.channel_id} from clan ${serverId}`);
+                  this.logger.debug(`Successfully fetched channel ${message.channel_id} from clan ${clanId}`);
                   // Thử các phương thức gửi tin nhắn với kiểm tra an toàn
                   if (channel.messages && typeof channel.messages.create === 'function') {
                     this.logger.debug(`Using channel.messages.create() for channel ${message.channel_id}`);
@@ -84,42 +90,7 @@ export abstract class CommandMessage {
                   this.logger.warn(`Channel not found in clan: ${message.channel_id}`);
                 }
               } else {
-                this.logger.warn(`No clan found with ID: ${serverId}`);
-              }
-            }
-
-            // Thử với servers nếu có
-            if (this.client.servers) {
-              const server = this.client.servers.get(serverId);
-              if (server) {
-                this.logger.debug(`Found server with ID: ${serverId}`);
-                const channel = await server.channels.fetch(message.channel_id);
-                if (channel) {
-                  this.logger.debug(`Successfully fetched channel ${message.channel_id} from server ${serverId}`);
-
-                  // Thử từng phương thức với kiểm tra an toàn
-                  if (channel.messages && typeof channel.messages.create === 'function') {
-                    return await channel.messages.create(this.filterReplyOptions(options));                  
-                  }
-
-                  if ((channel.messages as any).send) {
-                    return await (channel.messages as any).send(options);
-                  }
-
-                  if ((channel as any).send) {
-                    return await (channel as any).send(options);
-                  }
-
-                  if ((channel as any).createMessage) {
-                    return await (channel as any).createMessage(options);
-                  }
-
-                  this.logger.warn(`No suitable message creation method found for channel ${message.channel_id}`);
-                } else {
-                  this.logger.warn(`Channel not found in server: ${message.channel_id}`);
-                }
-              } else {
-                this.logger.warn(`No server found with ID: ${serverId}`);
+                this.logger.warn(`No clan found with ID: ${clanId}`);
               }
             }
 

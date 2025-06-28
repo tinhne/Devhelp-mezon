@@ -24,10 +24,8 @@ export class HealthController {
             status: isConnected ? 'UP' : 'DOWN',
             details: {
               hasUser: !!client.user,
-              hasServers: !!client.servers,
               hasClans: !!(client as any).clans,
-              clanCount: (client as any).clans?.size || 0,
-              serverCount: client.servers?.size || 0
+              clanCount: (client as any).clans?.size || 0
             }
           },
         }

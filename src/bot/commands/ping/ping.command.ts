@@ -13,38 +13,31 @@ export class PingCommand extends CommandMessage {
 
   async execute(args: string[], message: ChannelMessage): Promise<any> {
     this.logger.log(`Executing ping command from ${message.sender_id}`);
-    
     try {
       // Log client info
       let clientInfo = {
-        hasServers: !!this.client.servers,
         hasClans: !!(this.client as any).clans,
         hasUser: !!this.client.user,
         clanCount: (this.client as any).clans?.size,
-        serverCount: this.client.servers?.size
       };
-      
       this.logger.debug(`Client info: ${JSON.stringify(clientInfo)}`);
-      
+
       const messageChannel = await this.getChannelMessage(message);
       if (!messageChannel) {
         this.logger.error('Could not get message channel');
         return null;
       }
-      
-      // Thêm fallback khi không có access đến server collections
-      const serverCount = this.client.servers?.size || 
-                         (this.client as any).clans?.size || 
-                         'không xác định số lượng';
-      
+
+      const clanCount = (this.client as any).clans?.size || 0;
+
       this.logger.log('Sending ping response');
       return await messageChannel.reply({
-        t: `🏓 Pong! Bot đang hoạt động.\nKết nối với ${serverCount} server.`,
+        t: `🏓 Pong! Bot đang hoạt động.\nKết nối với ${clanCount} clan.`,
         mk: [
           {
             type: EMarkdownType.PRE,
             s: 0,
-            e: `🏓 Pong! Bot đang hoạt động.\nKết nối với ${serverCount} server.`.length,
+            e: `🏓 Pong! Bot đang hoạt động.\nKết nối với ${clanCount} clan.`.length,
           },
         ],
       });

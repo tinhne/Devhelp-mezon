@@ -11,12 +11,13 @@ export class MezonClientService {
     maxDelay: 30000
   };
   private connectionCheckInterval: NodeJS.Timeout | null = null;
+  private cachedClanIds: Set<string> = new Set();
 
   constructor(token: string) {
     this.token = token;
     this.client = new MezonClient(token);
 
-    // Tự động kiểm tra kết nối định kỳ
+    // Tự động kiểm tra kết nối định kỳ và phát hiện clan mới
     this.startConnectionCheck();
   }
 
@@ -33,6 +34,32 @@ export class MezonClientService {
         if (!isConnected) {
           this.logger.warn('Connection check detected disconnection, attempting silent reconnect');
           await this.reconnectBot();
+        }
+
+        // --- Kiểm tra clan mới ---
+        if ((this.client as any).clans) {
+          const currentClanIds = new Set<string>(Array.from((this.client as any).clans.keys()));
+          if (this.cachedClanIds.size === 0) {
+            this.cachedClanIds = currentClanIds;
+          } else {
+            let hasNewClan = false;
+            for (const id of currentClanIds) {
+              if (!this.cachedClanIds.has(id)) {
+                hasNewClan = true;
+                this.logger.warn(`Detected new clan joined: ${id}. Reloading client...`);
+                break;
+              }
+            }
+            if (hasNewClan) {
+              await this.reconnectBot();
+              // Sau khi reconnect, cập nhật lại cache
+              if ((this.client as any).clans) {
+                this.cachedClanIds = new Set<string>(Array.from((this.client as any).clans.keys()));
+              }
+            } else {
+              this.cachedClanIds = currentClanIds;
+            }
+          }
         }
       } catch (error) {
         this.logger.error(`Error during periodic connection check: ${error.message}`);
@@ -55,19 +82,22 @@ export class MezonClientService {
 
       this.logger.log('Authentication successful');
 
-      // Log client state sau khi login
+      // Log client state sau khi login (chỉ clan)
       const clientInfo = {
-        hasServers: !!this.client.servers,
         hasClans: !!(this.client as any).clans,
         userId: this.client.user?.id,
-        clanCount: (this.client as any).clans?.size,
-        serverCount: this.client.servers?.size
+        clanCount: (this.client as any).clans?.size
       };
 
       this.logger.log(`Client state after login: ${JSON.stringify(clientInfo)}`);
 
       // Reset bộ đếm backoff vì login thành công
       this.reconnectBackoff.attempts = 0;
+
+      // Cập nhật cache clanIds sau khi login
+      if ((this.client as any).clans) {
+        this.cachedClanIds = new Set<string>(Array.from((this.client as any).clans.keys()));
+      }
 
       // Chờ một chút để SDK khởi tạo đầy đủ các kết nối
       await new Promise(resolve => setTimeout(resolve, 500));
@@ -167,22 +197,19 @@ export class MezonClientService {
       const clientExists = !!this.client;
       let userExists = false;
       let isReady = false;
-      let hasServers = false;
       let hasClans = false;
 
       // Kiểm tra an toàn từng thuộc tính
       if (clientExists) {
         userExists = !!this.client.user?.id;
         isReady = !!(this.client as any).ready;
-        hasServers = !!this.client.servers && this.client.servers.size > 0;
         hasClans = !!(this.client as any).clans && (this.client as any).clans.size > 0;
       }
 
-      const isConnected = clientExists && (userExists || isReady || hasServers || hasClans);
+      const isConnected = clientExists && (userExists || isReady || hasClans);
 
       this.logger.debug(`Connection check: ${isConnected ? 'Connected' : 'Disconnected'} ` +
-        `(Client: ${clientExists}, User: ${userExists}, Ready: ${isReady}, ` +
-        `Servers: ${hasServers}, Clans: ${hasClans})`);
+        `(Client: ${clientExists}, User: ${userExists}, Ready: ${isReady}, Clans: ${hasClans})`);
 
       return isConnected;
     } catch (error) {

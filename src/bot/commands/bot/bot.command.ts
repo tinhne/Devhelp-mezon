@@ -97,7 +97,7 @@ export class BotCommand extends CommandMessage {
     });
   }
 
-  private async handleStatus(messageChannel: any): Promise<any> {
+private async handleStatus(messageChannel: any): Promise<any> {
     const status = this.botGateway.getBotStatus();
     const stateEmoji = status.state === 'active' ? '🟢' :
       status.state === 'inactive' ? '🔴' :
@@ -122,8 +122,8 @@ export class BotCommand extends CommandMessage {
               inline: true,
             },
             {
-              name: 'Số server kết nối',
-              value: String(status.connectionInfo.clanCount || status.connectionInfo.serverCount || 0),
+              name: 'Số clan kết nối',
+              value: String(status.connectionInfo.clanCount || 0),
               inline: true,
             },
             ...(status.state !== 'active' ? [
@@ -150,7 +150,7 @@ export class BotCommand extends CommandMessage {
       ],
     });
   }
-
+  
   private async handleDeactivate(args: string[], messageChannel: any): Promise<any> {
     if (!this.botStateService.isActive()) {
       return safeReply(
