@@ -15,24 +15,16 @@ export class AppController {
   getHello(): string {
     return this.appService.getHello();
   }
-  
+
+  // Đã loại bỏ hoàn toàn logic resetBot, chỉ trả về thông báo hướng dẫn
   @Get('/reset-bot')
   async resetBot() {
-    try {
-      const success = await this.botGateway.resetBot();
-      return { 
-        success, 
-        message: success ? 'Bot restarted successfully' : 'Bot restart failed',
-        timestamp: new Date().toISOString(),
-        status: this.botStateService.getState()
-      };
-    } catch (error) {
-      return { 
-        success: false, 
-        error: error.message,
-        timestamp: new Date().toISOString()
-      };
-    }
+    return { 
+      success: false,
+      message: '🔄 Lệnh reset bot đã bị vô hiệu hóa. Nếu gặp sự cố, hãy khởi động lại service bot trên server.',
+      timestamp: new Date().toISOString(),
+      status: this.botStateService.getState()
+    };
   }
   
   @Post('/deactivate-bot')

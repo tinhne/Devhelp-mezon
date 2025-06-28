@@ -9,16 +9,9 @@ import { safeReply, createReplyOptions, createPreMarkdown } from '../utils/reply
 export class BotGateway {
   private readonly logger = new Logger(BotGateway.name);
   private client: MezonClient;
-  private reconnectAttempts = 0;
-  private maxReconnectAttempts = Infinity;
-  private reconnectTimeout: NodeJS.Timeout | null = null;
-  private connectionCheckInterval: NodeJS.Timeout | null = null;
-  private reconnectResetInterval: NodeJS.Timeout | null = null;
-  private isResetting = false;
-  private lastResetFailed = false;
   private isEventInitialized = false;
 
-  // Handler references (for future-proofing, but MezonClient does not support .off)
+  // Handler references
   private channelMessageHandler = this.handleChannelMessage.bind(this);
   private buttonClickedHandler = this.handleButtonClicked.bind(this);
   private errorHandler = this.handleError.bind(this);
@@ -29,23 +22,14 @@ export class BotGateway {
     private botStateService: BotStateService
   ) {
     this.client = this.clientService.getClient();
-    this.reconnectResetInterval = setInterval(() => {
-      if (this.reconnectAttempts > 0) {
-        this.logger.log('Reset reconnect counter from ' + this.reconnectAttempts + ' to 0');
-        this.reconnectAttempts = 0;
-      }
-    }, 60 * 60 * 1000);
   }
 
   onModuleDestroy() {
-    if (this.reconnectTimeout) clearTimeout(this.reconnectTimeout);
-    if (this.connectionCheckInterval) clearInterval(this.connectionCheckInterval);
-    if (this.reconnectResetInterval) clearInterval(this.reconnectResetInterval);
     this.isEventInitialized = false;
   }
 
   async initEvent() {
-    // MezonClient không hỗ trợ .off(), chỉ đăng ký 1 lần duy nhất
+    // Đảm bảo chỉ đăng ký event 1 lần duy nhất
     if (this.isEventInitialized) {
       this.logger.warn('Bot events already initialized, skipping duplicate registration.');
       return;
@@ -54,33 +38,18 @@ export class BotGateway {
 
     this.logger.log('Bot events initialized');
 
-    this.client.on('connected', () => {
-      this.logger.log('Bot connected to Mezon API');
-      this.reconnectAttempts = 0;
-      this.botStateService.setActive();
-    });
-
-    this.client.on('disconnected', () => {
-      this.logger.warn('Bot disconnected from Mezon API');
-      this.botStateService.setReconnecting();
-      this.handleDisconnect();
-    });
-
+    // KHÔNG đăng ký lại các event đã đăng ký ở MezonClientService
+    // Chỉ chuyển tiếp event nếu cần
     this.client.on(Events.ChannelMessage, this.channelMessageHandler);
     this.client.on(Events.MessageButtonClicked, this.buttonClickedHandler);
     this.client.on('error', this.errorHandler);
 
-    this.startConnectionCheck();
     this.botStateService.setActive();
     this.logger.log('Bot events initialized successfully');
   }
 
   private handleChannelMessage(message: any) {
     if (!message || !message.content) return;
-    if (this.isResetting) {
-      this.logger.debug('Bot is resetting. Ignoring all messages.');
-      return;
-    }
     if (
       (message.sender_id && this.client.user && message.sender_id === this.client.user.id) ||
       (message.author_id && this.client.user && message.author_id === this.client.user.id)
@@ -112,16 +81,8 @@ export class BotGateway {
     // Kiểm tra lệnh resetbot để buộc khởi động lại
     if (content.startsWith('*resetbot') || content.startsWith('/resetbot') ||
       content.startsWith('\\resetbot') || content === 'resetbot') {
-      this.logger.log('Reset command received, resetting bot connection');
-      this.resetBot().then(success => {
-        if (success) {
-          this.sendResetConfirmation(message);
-          this.lastResetFailed = false;
-        } else if (!this.lastResetFailed) {
-          this.sendResetFailedNotification(message);
-          this.lastResetFailed = true;
-        }
-      });
+      this.logger.log('Reset command received, but reset logic is disabled.');
+      this.sendResetConfirmation(message);
       return;
     }
 
@@ -173,102 +134,6 @@ export class BotGateway {
   private handleError(error: any) {
     this.logger.error(`Error in Mezon client: ${error.message}`, error.stack);
     this.botStateService.setError(error.message);
-    this.handleConnectionError(error);
-  }
-
-  private startConnectionCheck() {
-    if (this.connectionCheckInterval) {
-      clearInterval(this.connectionCheckInterval);
-    }
-    this.connectionCheckInterval = setInterval(async () => {
-      try {
-        const isConnected = await this.clientService.checkConnection();
-        if (!isConnected) {
-          this.logger.warn('Connection check failed, attempting to reconnect');
-          this.botStateService.setReconnecting();
-          await this.handleConnectionError(new Error('Connection check failed'));
-        }
-      } catch (error) {
-        this.logger.error(`Error during connection check: ${error.message}`);
-      }
-    }, 5 * 60 * 1000);
-  }
-
-  private async handleDisconnect() {
-    if (this.reconnectTimeout) return;
-    this.logger.warn('Bot disconnected, attempting to reconnect');
-    this.botStateService.setReconnecting();
-    this.reconnectTimeout = setTimeout(async () => {
-      try {
-        this.reconnectAttempts++;
-        this.logger.log(`Reconnect attempt ${this.reconnectAttempts}`);
-        this.client = await this.clientService.reconnectBot();
-        this.logger.log('Reconnection successful');
-        this.botStateService.setActive();
-        // Không gọi lại initEvent() để tránh đăng ký lặp event handler
-      } catch (error) {
-        this.logger.error(`Reconnection failed: ${error.message}`);
-        this.botStateService.setError(`Reconnection failed: ${error.message}`);
-        const retryTime = Math.min(30000, 3000 * Math.pow(1.5, Math.min(10, this.reconnectAttempts)));
-        this.logger.log(`Will retry in ${retryTime / 1000} seconds...`);
-        this.reconnectTimeout = setTimeout(() => {
-          this.handleDisconnect();
-        }, retryTime);
-      } finally {
-        this.reconnectTimeout = null;
-      }
-    }, 3000);
-  }
-
-  private async handleConnectionError(error: Error) {
-    this.logger.error(`Bot connection error: ${error.message}`);
-    this.botStateService.setError(`Connection error: ${error.message}`);
-    setTimeout(async () => {
-      this.logger.log('Attempting to reconnect after error...');
-      try {
-        this.reconnectAttempts++;
-        this.client = await this.clientService.reconnectBot();
-        this.logger.log(`Reconnection after error successful (attempt ${this.reconnectAttempts})`);
-        this.botStateService.setActive();
-        // Không gọi lại initEvent() để tránh đăng ký lặp event handler
-      } catch (e) {
-        this.logger.error(`Reconnection failed (attempt ${this.reconnectAttempts}): ${e.message}`);
-        this.botStateService.setError(`Reconnection failed: ${e.message}`);
-        const retryDelay = Math.min(30000, 3000 * Math.pow(1.5, Math.min(10, this.reconnectAttempts)));
-        this.logger.log(`Will try again in ${retryDelay / 1000} seconds (attempt ${this.reconnectAttempts})`);
-        setTimeout(() => this.handleConnectionError(error), retryDelay);
-      }
-    }, 5000);
-  }
-
-  async resetBot() {
-    if (this.isResetting) {
-      this.logger.warn('Reset already in progress, skipping duplicate reset.');
-      return false;
-    }
-    this.isResetting = true;
-    this.logger.log('Manual bot reset initiated');
-    this.reconnectAttempts = 0;
-    this.botStateService.setReconnecting();
-
-    try {
-      this.client = await this.clientService.reconnectBot();
-      // Không gọi lại initEvent() để tránh đăng ký lặp event handler
-      this.botStateService.setActive();
-      this.isResetting = false;
-
-      if (process.env.NODE_ENV === 'production') {
-        this.logger.warn('Restarting process after bot reset to clear all listeners');
-        setTimeout(() => process.exit(0), 1000);
-      }
-
-      return true;
-    } catch (error) {
-      this.logger.error(`Manual bot reset failed: ${error.message}`);
-      this.botStateService.setError(`Manual reset failed: ${error.message}`);
-      this.isResetting = false;
-      return false;
-    }
   }
 
   private async sendChannelMessage(clanId: string, channelId: string, content: any) {
@@ -301,17 +166,8 @@ export class BotGateway {
     const clanId = message.clan_id || message.server_id;
     const channelId = message.channel_id;
     await this.sendChannelMessage(clanId, channelId, createReplyOptions(
-      `✅ Bot đã được khởi động lại thành công!`,
-      createPreMarkdown(`✅ Bot đã được khởi động lại thành công!`)
-    ));
-  }
-
-  private async sendResetFailedNotification(message: any, errorMsg?: string) {
-    const clanId = message.clan_id || message.server_id;
-    const channelId = message.channel_id;
-    await this.sendChannelMessage(clanId, channelId, createReplyOptions(
-      `❌ Không thể khởi động lại bot. Đang thử lại tự động...${errorMsg ? ` (${errorMsg})` : ''}`,
-      createPreMarkdown(`❌ Không thể khởi động lại bot. Đang thử lại tự động...${errorMsg ? ` (${errorMsg})` : ''}`)
+      `✅ Bot đã nhận lệnh reset (không còn tự động reset/reconnect).`,
+      createPreMarkdown(`✅ Bot đã nhận lệnh reset (không còn tự động reset/reconnect).`)
     ));
   }
 
@@ -325,17 +181,28 @@ export class BotGateway {
   }
 
   getBotStatus() {
+    const clans = (this.client as any).clans;
+    let clanCount = 0;
+    if (clans) {
+      if (typeof clans.size === 'number') {
+        clanCount = clans.size;
+      } else if (typeof clans.keys === 'function') {
+        clanCount = Array.from(clans.keys()).length;
+      } else if (Array.isArray(clans)) {
+        clanCount = clans.length;
+      } else if (typeof clans === 'object') {
+        clanCount = Object.keys(clans).length;
+      }
+    }
     const clientInfo = {
-      hasClans: !!(this.client as any).clans,
+      hasClans: !!clans,
       hasUser: !!this.client.user,
-      clanCount: (this.client as any).clans?.size,
+      clanCount,
     };
 
     return {
       ...this.botStateService.getStatusDetails(),
       connectionInfo: clientInfo,
-      lastReconnectAttempt: this.reconnectAttempts,
-      maxReconnectAttempts: this.maxReconnectAttempts !== Infinity ? this.maxReconnectAttempts : "No limit",
       timestamp: new Date().toISOString()
     };
   }

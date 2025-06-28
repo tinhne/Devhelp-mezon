@@ -207,32 +207,13 @@ private async handleStatus(messageChannel: any): Promise<any> {
   }
 
   private async handleReset(messageChannel: any): Promise<any> {
-    await safeReply(
+    // Không còn logic resetBot, chỉ trả về thông báo hướng dẫn
+    return safeReply(
       messageChannel,
       createReplyOptions(
-        '⏳ Đang khởi động lại bot...',
-        createPreMarkdown('⏳ Đang khởi động lại bot...')
+        '🔄 Lệnh reset bot đã bị vô hiệu hóa. Nếu gặp sự cố, hãy khởi động lại service bot trên server.',
+        createPreMarkdown('🔄 Lệnh reset bot đã bị vô hiệu hóa. Nếu gặp sự cố, hãy khởi động lại service bot trên server.')
       )
     );
-
-    const success = await this.botGateway.resetBot();
-
-    if (success) {
-      return safeReply(
-        messageChannel,
-        createReplyOptions(
-          '✅ Bot đã được khởi động lại thành công!',
-          createPreMarkdown('✅ Bot đã được khởi động lại thành công!')
-        )
-      );
-    } else {
-      return safeReply(
-        messageChannel,
-        createReplyOptions(
-          `❌ Khởi động lại bot thất bại: ${this.botStateService.getInactiveReason()}`,
-          createPreMarkdown(`❌ Khởi động lại bot thất bại: ${this.botStateService.getInactiveReason()}`)
-        )
-      );
-    }
   }
 }

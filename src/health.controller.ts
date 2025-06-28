@@ -13,8 +13,22 @@ export class HealthController {
   async check() {
     try {
       const client = this.mezonClientService.getClient();
-      const isConnected = await this.mezonClientService.checkConnection();
-      
+      const isConnected = !!client?.user;
+
+      let clanCount = 0;
+      const clans = (client as any).clans;
+      if (clans) {
+        if (typeof clans.size === 'number') {
+          clanCount = clans.size;
+        } else if (typeof clans.keys === 'function') {
+          clanCount = Array.from(clans.keys()).length;
+        } else if (Array.isArray(clans)) {
+          clanCount = clans.length;
+        } else if (typeof clans === 'object') {
+          clanCount = Object.keys(clans).length;
+        }
+      }
+
       return {
         status: isConnected ? 'UP' : 'DOWN',
         time: new Date().toISOString(),
@@ -24,8 +38,8 @@ export class HealthController {
             status: isConnected ? 'UP' : 'DOWN',
             details: {
               hasUser: !!client.user,
-              hasClans: !!(client as any).clans,
-              clanCount: (client as any).clans?.size || 0
+              hasClans: !!clans,
+              clanCount
             }
           },
         }
