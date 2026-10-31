@@ -1,185 +1,210 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# DevHelp Bot for Mezon
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+A chat bot for the [Mezon](https://mezon.ai) platform that gives a development team a shared memory inside chat: save frequently used shell commands, log bugs with severity and status, attach solutions to bugs, and search all of it with one command.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+Team project built on top of a Mezon bot template (see [Team](#team)).
 
-## Description
+![NestJS](https://img.shields.io/badge/NestJS-10-e0234e?style=flat-square) ![Node.js](https://img.shields.io/badge/Node.js-18-339933?style=flat-square) ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-TypeORM_0.3-336791?style=flat-square)
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## Overview
 
-## Project setup
+Developers repeatedly look up the same commands and re-debug the same problems. DevHelp keeps that knowledge in the team chat: a message such as `*command save ...` or `*bug create ...` is stored in PostgreSQL, and `*search <keyword>` finds matching commands, bugs and solutions. The bot connects to Mezon through `mezon-sdk`, routes prefixed messages to command handlers registered with a decorator, and replies with formatted embeds. Bot replies are written in Vietnamese.
 
-```bash
-$ yarn install
-```
+## Key features
 
-## Compile and run the project
+- **Command snippets** – save, list by category, view, find, update, soft delete and restore saved commands, with optional JSON `parameters` and `examples` (`src/bot/commands/command/command.command.ts`, `src/bot/services/command.service.ts`).
+- **Bug log** – create bugs with severity (`low`, `medium`, `high`, `critical`), reproduction steps and an environment JSON; list by status (`open`, `in_progress`, `closed`); update fields (`src/bot/commands/bug/bug.command.ts`).
+- **Solutions linked to bugs** – each solution belongs to a bug and can hold a code snippet; bug details show their solutions (`src/bot/commands/solution/solution.command.ts`, `src/bot/models/solution.entity.ts`).
+- **Search** – case-insensitive substring search (`ILIKE`) across command title/command/description, bug title/description and solution title/description/code, either all at once or scoped to one type (`src/bot/services/search.service.ts`).
+- **Bot on/off switch** – an in-memory active/inactive state; while inactive the bot ignores everything except the activate, deactivate and status commands (`src/bot/services/bot-state.service.ts`, `src/bot/events/bot.gateways.ts`).
+- **HTTP status endpoints** – health check and bot status/control routes served by the same NestJS app (`src/health.controller.ts`, `src/app.controller.ts`).
+- **Three command prefixes** – `*`, `/` and `\` are all accepted (`src/bot/utils/helps.ts`).
 
-```bash
-# development
-$ yarn run start
+## Chat commands
 
-# watch mode
-$ yarn run start:dev
+Arguments use `--name=value`; wrap values containing spaces in double quotes. All commands also work with the `/` or `\` prefix.
 
-# production mode
-$ yarn run start:prod
-```
+| Command | Arguments | What it does |
+| --- | --- | --- |
+| `*help` | – | Overview of all commands |
+| `*ping` | – | Health reply with the number of clans the bot is connected to |
+| `*command save` | `--title`, `--command`, `--category` (required); `--desc`, `--parameters='{"k":"v"}'`, `--examples='["..."]'` | Save a command snippet |
+| `*command list` | `--category` (required) | List non-deleted snippets in a category |
+| `*command detail` | `--id` | Show one snippet |
+| `*command find` | `--query` | Search snippets |
+| `*command update` | `--id` plus any of `--title --command --desc --category --parameters --examples` | Update a snippet |
+| `*command delete` | `--id` | Soft delete (sets `deleted = true`) |
+| `*command restore` | `--id` | Undo a soft delete |
+| `*bug create` | `--title` (required); `--desc`, `--severity`, `--steps`, `--environment='{"os":"..."}'` | Log a bug (status starts as `open`) |
+| `*bug list` | `--status` (required) | List bugs with a given status |
+| `*bug detail` | `--id` | Bug details with linked solutions |
+| `*bug update` | `--id` plus any of `--title --desc --severity --status --steps --environment` | Update a bug |
+| `*solution create` | `--bug-id`, `--title` (required); `--desc`, `--code` | Add a solution to a bug |
+| `*solution list` | `--bug-id` | Solutions for a bug |
+| `*solution detail` | `--id` | Show one solution |
+| `*solution update` | `--id` plus any of `--title --desc --code` | Update a solution |
+| `*search <keyword>` | – | Search commands, bugs and solutions |
+| `*search commands\|bugs\|solutions <keyword>` | – | Search one type only |
+| `*bot status` | – | Current state, since when, and inactive reason |
+| `*bot on` / `*bot activate` | – | Activate the bot |
+| `*bot off` / `*bot deactivate` | optional reason | Deactivate the bot |
+| `*bot reset` | – | Disabled: replies that reset is turned off and the service should be restarted instead |
+| `*activate`, `*active` | – | Activate the bot (accepted even while inactive) |
+| `*deactivate` | optional reason | Deactivate the bot |
+| `*botstatus` | – | Short status message |
 
-## Run tests
+Example:
 
-```bash
-# unit tests
-$ yarn run test
-
-# e2e tests
-$ yarn run test:e2e
-
-# test coverage
-$ yarn run test:cov
-```
-
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
-```bash
-$ yarn install -g @nestjs/mau
-$ mau deploy
-```
-
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
-
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
-
-
-## 💡 Features & Commands
-
-### 1. Help
-```
-*help
-```
-
-### 2. Command Management
-```
+```text
 *command save --title="git-stash" --command="git stash apply" --desc="Apply latest stash" --category="git"
-*command list --category="git"
-*command detail --id=1
-*command find --query="git stash"
-*command update --id=1 --title="git-stash-new" --desc="New description"
-*command delete --id=1
-*command restore --id=1
-```
-
-### 3. Bug Management
-```
-*bug create --title="JWT token not refreshed" --desc="Token is not refreshed when expired" --severity="high"
-*bug list --status="open"
-*bug detail --id=1
-*bug update --id=1 --status="in_progress"
-```
-
-### 4. Solution Management
-```
-*solution create --bug-id=1 --title="Fix refresh token" --desc="Add token check" --code="const checkToken = async (req, res, next) => {...}"
-*solution list --bug-id=1
-*solution detail --id=1
-*solution update --id=1 --title="New title" --desc="New description" --code="New code"
-```
-
-### 5. Search
-```
+*bug create --title="JWT token not refreshed" --severity="high"
+*solution create --bug-id=1 --title="Refresh before expiry" --code="await refreshToken()"
 *search token
-*search bugs refresh
-*search solutions authentication
 ```
 
-### 6. Bot Status & Control
+## Tech stack
+
+| Layer | Technology |
+| --- | --- |
+| Runtime | Node.js 18 (`engines` in `package.json`) |
+| Framework | NestJS 10 (`@nestjs/core` 10.4), `@nestjs/event-emitter`, `@nestjs/config` with Joi validation |
+| Chat platform | `mezon-sdk` 2.7.99 |
+| Persistence | PostgreSQL via TypeORM 0.3 (`pg` driver) |
+| Language / tooling | TypeScript 5, ESLint, Prettier, Jest (scaffold only) |
+| Package manager | Yarn 1 (`yarn.lock`) |
+
+## Architecture
+
+The NestJS application owns a single `MezonClient`. When a message arrives, `BotGateway` drops messages from the bot itself, checks the prefix and the on/off state, and re-emits the event through `EventEmitter2`. The channel-message listener passes the text to `CommandBase`, which looks up the handler class registered with the `@Command('<name>')` decorator and runs it. Handlers parse `--key=value` arguments, call a TypeORM service and reply to the channel.
+
+```mermaid
+flowchart LR
+  U["Mezon chat"] -->|"*command ..."| SDK["mezon-sdk client"]
+  SDK --> GW["BotGateway"]
+  GW -->|"EventEmitter2"| L["Channel message listener"]
+  L --> REG["CommandBase + @Command registry"]
+  REG --> H["Command handlers"]
+  H --> S["Services (TypeORM)"]
+  S --> DB[("PostgreSQL")]
+  H -->|"embed reply"| SDK
+  HTTP["HTTP :4000"] --> GW
 ```
-*bot status
-*bot deactivate
-*bot activate
-*bot reset
+
+### Data model
+
+| Entity | Fields |
+| --- | --- |
+| `Command` | `id`, `title`, `command`, `description`, `category`, `parameters` (jsonb), `examples` (jsonb), `deleted`, timestamps |
+| `Bug` | `id`, `title`, `description`, `status` (enum), `severity` (enum), `steps`, `environment` (jsonb), timestamps; one-to-many `solutions` |
+| `Solution` | `id`, `title`, `description`, `code`, `bug_id` → `Bug`, timestamps |
+
+Tables are created automatically on startup because TypeORM runs with `synchronize: true` (`src/app.module.ts`).
+
+### HTTP endpoints
+
+| Method | Path | Auth | Description |
+| --- | --- | --- | --- |
+| GET | `/` | none | Returns `Hello World!` |
+| GET | `/health` | none | Mezon connection status, bot state and clan count |
+| GET | `/bot-status` | none | Bot state details and connection info |
+| POST | `/activate-bot` | none | Set the bot to active |
+| POST | `/deactivate-bot` | none | Set the bot to inactive; optional JSON body `{ "reason": "..." }` |
+| GET | `/reset-bot` | none | Returns a message that reset is disabled |
+
+## Project structure
+
+```text
+src/
+├── main.ts                    # Bootstrap: HTTP server, then bot event registration
+├── app.module.ts              # Config validation, TypeORM (PostgreSQL), Mezon and bot modules
+├── app.controller.ts          # Bot status/control HTTP routes
+├── health.controller.ts       # /health
+├── mezon/                     # MezonClient wrapper and dynamic module
+└── bot/
+    ├── base/                  # @Command decorator, command registry, base command class
+    ├── commands/              # One folder per chat command (command, bug, solution, search, bot, ...)
+    ├── events/bot.gateways.ts # Message filtering, prefixes, on/off gate
+    ├── listeners/             # Channel message and button-click listeners
+    ├── models/                # TypeORM entities: Command, Bug, Solution
+    ├── services/              # CRUD/search services and bot state
+    └── utils/                 # Argument parser, reply and embed helpers
+bug.csv, command.csv, solution.csv   # Sample rows matching the entities (not loaded automatically)
 ```
 
-### 7. Ping
+## Getting started
+
+### Prerequisites
+
+- Node.js 18
+- Yarn 1
+- A PostgreSQL database
+- A Mezon bot token
+
+### Install and run
+
+```bash
+git clone https://github.com/tinhne/Devhelp-mezon.git
+cd Devhelp-mezon
+yarn install
 ```
-*ping
+
+Create a `.env` file in the project root (values below are placeholders):
+
+```dotenv
+POSTGRES_HOST=localhost
+POSTGRES_PORT=5432
+POSTGRES_USER=your-db-user
+POSTGRES_PASSWORD=your-db-password
+POSTGRES_DB=devhelp
+MEZON_TOKEN=your-mezon-bot-token
+PORT=4000
 ```
 
----
+```bash
+yarn start:dev                 # development with watch mode
+yarn build && yarn start:prod  # compiled build from dist/
+```
 
-## 🛡️ Resources
+Invite the bot to a Mezon clan and type `*help` in a channel.
 
-- [NestJS Documentation](https://docs.nestjs.com)
-- [Mezon Platform](https://mezon.ai)
-- [Discord Support](https://discord.gg/G7Qnnhy)
-- [NestJS Courses](https://courses.nestjs.com)
-- [NestJS Devtools](https://devtools.nestjs.com)
-- [Jobs Board](https://jobs.nestjs.com)
+## Environment variables
 
----
+| Name | Required | Description |
+| --- | --- | --- |
+| `POSTGRES_HOST` | yes | PostgreSQL host |
+| `POSTGRES_PORT` | yes | PostgreSQL port |
+| `POSTGRES_USER` | yes | Database user |
+| `POSTGRES_PASSWORD` | yes | Database password |
+| `POSTGRES_DB` | yes | Database name |
+| `MEZON_TOKEN` | yes | Bot token used by `mezon-sdk` to log in |
+| `PORT` | no | HTTP port, defaults to `4000` |
 
-## 🤝 Support
+## Known limitations
 
-Devhelp-mezon is MIT-licensed and open source.  
-For support, join our [MEZON](https://mezon.ai/invite/1840697798857592832) or check the [NestJS support page](https://docs.nestjs.com/support).
+- The on/off state lives in memory and is shared by every clan; it is not persisted.
+- Chat commands and HTTP control routes have no permission checks, so any member (or anyone who can reach the HTTP port) can deactivate the bot or edit records.
+- Search is a substring match, not full-text search.
+- Only saved commands support soft delete and restore; bugs and solutions cannot be deleted from chat.
+- `*bot reset` is intentionally disabled.
+- Schema changes rely on `synchronize: true`; there are no migrations.
+- There are no unit tests; `test/app.e2e-spec.ts` is the default NestJS scaffold and needs a live database and token.
+- A button-click listener for view/update/delete/restore actions exists, but most replies no longer attach buttons.
+- Some dependencies and constants (`better-sqlite3`, `qrcode`, `cron`, `src/bot/constants/tables.ts`) are leftovers from the template and are unused.
 
----
+## Team
 
-## 👤 Author
+DevHelp was built by two people in June 2025:
 
-- Huu Thien [Facebook](https://www.facebook.com/imhuuthien) | [GitHub](https://github.com/NguyenHuuThien098)
-- Trung Tinh [Facebook](https://www.facebook.com/trung.tinh.30323) | [GitHub](https://github.com/tinhne)
-- Devhelp-mezon contributors
+| Contributor | Areas (from commit history) |
+| --- | --- |
+| Huu Thien (git author `NguyenHuuThien098`) | Bot on/off lifecycle (`bot`, `active`, `deactivate`, `botstatus` commands and `BotStateService`), `/health` and status endpoints, `ping`, Mezon connection and clan-resolution fixes, argument parser and reply helpers, embed layout updates |
+| Lê Văn Trung Tính ([@tinhne](https://github.com/tinhne)) | Conversion of the template into DevHelp: `Command`, `Bug` and `Solution` entities and services, the `command`, `bug`, `solution` and `search` commands, button-click handlers; repository setup |
 
----
+The bot scaffolding (decorator-based command registry, Mezon client module, NestJS/TypeORM wiring) comes from the [`mezonai/utility-mezon-bot`](https://github.com/mezonai/utility-mezon-bot) template by michael.mai, thai.phamquoc, man2807 and van-datncc. This repository starts from a single import commit on 2025-06-20; the earlier history, including the template and the first DevHelp commits, is kept in [`tinhne/mezon-bot-helpdev`](https://github.com/tinhne/mezon-bot-helpdev).
 
-## 📄 License
+## Author
 
-[MIT](https://github.com/nestjs/nest/blob/master/LICENSE)
+Contributor: **Lê Văn Trung Tính** — Software Engineer | AI Product Builder
+
+- Website: [trungtinh.site](https://trungtinh.site)
+- GitHub: [@tinhne](https://github.com/tinhne)
